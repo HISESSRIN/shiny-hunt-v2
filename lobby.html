@@ -266,9 +266,32 @@
             color: #7fffd4;
             margin-top: 0.3rem;
         }
+        .hisessrin-logo {
+            position: fixed;
+            left: 2rem;
+            bottom: 2rem;
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            border-radius: 1rem;
+            box-shadow: 0 4px 16px #000a;
+            background: #181818cc;
+            border: 3px solid #7fffd4;
+            z-index: 1001;
+            transition: transform 0.2s;
+            pointer-events: none;
+            opacity: 0.95;
+        }
+        .hisessrin-logo:hover {
+            transform: scale(1.07) rotate(-3deg);
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
+    <!-- Logo HISESSRIN en esquina inferior izquierda -->
+    <img src="img/HISESSRIN.png" alt="Logo HISESSRIN" class="hisessrin-logo">
+
     <div class="dashboard-container">
         <div style="position: absolute; top: 1.5rem; left: 2rem; z-index: 10;">
             <button class="btn btn-outline-info btn-sm" onclick="window.location.href='index.html'">
@@ -1451,15 +1474,26 @@
                 `;
             }
             function updateSwal() {
+                // Leer valores actuales antes de actualizar el HTML
+                const regionActual = document.getElementById('swal-region')?.value || sitio.region || '';
+                const rutaActual = document.getElementById('swal-ruta')?.value || sitio.ruta || '';
+                let fotoRutaActual = sitio.fotoRuta || '';
+                const previewRuta = document.getElementById('swal-preview-ruta');
+                if (previewRuta && previewRuta.src && !previewRuta.src.includes('placeholder')) {
+                    fotoRutaActual = previewRuta.src;
+                }
                 Swal.update({
                     html: `
                         <label>Región</label>
                         <select id='swal-region' class='swal2-select' style='width:100%;margin-bottom:0.5rem;'>
                             <option value=''>Selecciona región</option>
-                            ${regiones.map(r => `<option value='${r}' ${sitio.region===r?'selected':''}>${r}</option>`).join('')}
+                            ${regiones.map(r => `<option value='${r}' ${regionActual===r?'selected':''}>${r}</option>`).join('')}
                         </select>
                         <label>Ruta</label>
-                        <input id='swal-ruta' class='swal2-input' placeholder='Ruta o lugar' value='${sitio.ruta||''}'>
+                        <input id='swal-ruta' class='swal2-input' placeholder='Ruta o lugar' value='${rutaActual}'>
+                        <label>Foto de la ruta</label>
+                        <input id='swal-foto-ruta' class='swal2-file' type='file' accept='image/*' style='margin-bottom:0.5rem;'>
+                        <img id='swal-preview-ruta' src='${fotoRutaActual}' style='width:100px;height:60px;object-fit:cover;display:${fotoRutaActual?'block':'none'};margin:0.5rem auto;border-radius:0.5rem;'>
                         <div style='margin:0.5rem 0;'>
                             <button type='button' class='btn btn-info btn-sm' id='btnMostrarPickerPokeSitio'>${pickerVisible ? 'Ocultar' : 'Agregar Pokémon de base'}</button>
                             <button type='button' class='btn btn-secondary btn-sm' id='btnAgregarManualPokeSitio'>${manualVisible ? 'Ocultar' : 'Agregar manual'}</button>
@@ -1554,6 +1588,19 @@
                 cancelButtonText: 'Cancelar',
                 didOpen: () => {
                     updateSwal();
+                    // Agregar evento para previsualizar foto de la ruta
+                    const fotoRutaInput = document.getElementById('swal-foto-ruta');
+                    if (fotoRutaInput) {
+                        fotoRutaInput.addEventListener('change', function(e) {
+                            if (e.target.files && e.target.files[0]) {
+                                fileToBase64(e.target.files[0]).then(base64 => {
+                                    const preview = document.getElementById('swal-preview-ruta');
+                                    preview.src = base64;
+                                    preview.style.display = 'block';
+                                });
+                            }
+                        });
+                    }
                     window.seleccionarPokeSitio = function(baseIdx) {
                         const poke = pokesBasePicker[baseIdx];
                         pokemonesRuta.push({
@@ -1569,10 +1616,18 @@
                         updateSwal();
                     };
                 },
-                preConfirm: () => {
+                preConfirm: async () => {
+                    let fotoRuta = sitio.fotoRuta || '';
+                    const fileInput = document.getElementById('swal-foto-ruta');
+                    if (fileInput.files && fileInput.files[0]) {
+                        fotoRuta = await fileToBase64(fileInput.files[0]);
+                    } else {
+                        fotoRuta = document.getElementById('swal-preview-ruta').src;
+                    }
                     return {
                         region: document.getElementById('swal-region').value,
                         ruta: document.getElementById('swal-ruta').value,
+                        fotoRuta: fotoRuta,
                         pokemones: pokemonesRuta
                     };
                 }
@@ -1629,12 +1684,17 @@
                 const div = document.createElement('div');
                 div.className = 'poke-item';
                 div.innerHTML = `
-                    <b>${sitio.region} - ${sitio.ruta}</b>
-                    <span style='margin-left:1rem;'>Pokémon: <b>${sitio.pokemones.length}</b></span>
-                    <span style='margin-left:1rem;'>
-                        <button class='btn btn-sm btn-outline-warning' onclick='editSitio(${idx});event.stopPropagation();'><i class='bi bi-pencil'></i></button>
-                        <button class='btn btn-sm btn-outline-danger' onclick='delSitio(${idx});event.stopPropagation();'><i class='bi bi-trash'></i></button>
-                    </span>
+                    <div style='display:flex;align-items:center;gap:1rem;width:100%;'>
+                        ${sitio.fotoRuta ? `<img src='${sitio.fotoRuta}' style='width:80px;height:50px;object-fit:cover;border-radius:0.5rem;background:#222;'>` : ''}
+                        <div style='flex:1;'>
+                            <b>${sitio.region} - ${sitio.ruta}</b>
+                            <span style='margin-left:1rem;'>Pokémon: <b>${sitio.pokemones.length}</b></span>
+                        </div>
+                        <span>
+                            <button class='btn btn-sm btn-outline-warning' onclick='editSitio(${idx});event.stopPropagation();'><i class='bi bi-pencil'></i></button>
+                            <button class='btn btn-sm btn-outline-danger' onclick='delSitio(${idx});event.stopPropagation();'><i class='bi bi-trash'></i></button>
+                        </span>
+                    </div>
                     <div style='width:100%;margin-top:0.5rem;'>
                         ${sitio.pokemones.map(p=>`<span style='display:inline-block;margin-right:0.5rem;'>
                             <img src='${p.imagen||''}' style='width:28px;height:28px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>

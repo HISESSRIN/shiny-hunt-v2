@@ -258,6 +258,70 @@
         .logout-btn:hover {
             background: #b22;
         }
+        
+        /* Burbuja de X (Twitter) */
+        .x-bubble {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            background: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 3px solid;
+            border-image: linear-gradient(var(--gradient-angle, 45deg), #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            animation: animateGradient 6s linear infinite;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .x-bubble::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 50%;
+            z-index: -1;
+            animation: rotateGradient 3s ease infinite;
+        }
+        .x-bubble:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+        .x-bubble:active {
+            transform: scale(0.95);
+        }
+        .hisessrin-logo {
+            position: fixed;
+            left: 2rem;
+            bottom: 2rem;
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            border-radius: 1rem;
+            box-shadow: 0 4px 16px #000a;
+            background: #181818cc;
+            border: 3px solid #7fffd4;
+            z-index: 1001;
+            transition: transform 0.2s;
+            pointer-events: none;
+            opacity: 0.95;
+        }
+        .hisessrin-logo:hover {
+            transform: scale(1.07) rotate(-3deg);
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -388,6 +452,14 @@
             </div>
         </div>
     </div>
+
+    <!-- Burbuja de X (Twitter) -->
+    <a href="https://x.com/HISESSRIN_" target="_blank" class="x-bubble" title="Sígueme en X">
+        𝕏
+    </a>
+
+    <!-- Logo HISESSRIN en esquina inferior izquierda -->
+    <img src="img/HISESSRIN.png" alt="Logo HISESSRIN" class="hisessrin-logo">
 
     <script src="js/bootstrap.bundle.min.js"></script>
     <script>
