@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Dashboard - Inicio</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <script src="js/sweetalert2.all.min.js"></script>
+    <style>
+        :root {
+            --gradient-angle: 45deg;
+        }
+        @keyframes animateGradient {
+            0% { --gradient-angle: 0deg; }
+            100% { --gradient-angle: 360deg; }
+        }
+        body {
+            min-height: 100vh;
+            min-width: 100vw;
+            background: url('a.gif') center center/cover no-repeat fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container {
+            border: 4px solid;
+            border-image: linear-gradient(var(--gradient-angle, 45deg), #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            animation: animateGradient 6s linear infinite;
+            background: rgba(0,0,0,0.95);
+            border-radius: 2rem;
+            box-shadow: 0 0 32px #000a;
+            padding: 2rem 2.5rem;
+            width: 900px;
+            max-width: 98vw;
+            color: #fff;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.3s;
+        }
+        .main-container::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 2rem;
+            z-index: -1;
+            animation: rotateGradient 3s ease infinite;
+        }
+        @keyframes rotateGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes pulseYellow {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 255, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0); }
+        }
+        .pulse-animation {
+            box-shadow: 0 0 0 6px rgba(255,255,0,0.7);
+            animation: pulseYellow 1s ease-out;
+        }
+        .main-title {
+            font-weight: bold;
+            color: #7fffd4;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px #7fffd4;
+        }
+        .subtitle {
+            color: #ccc;
+            margin-bottom: 3rem;
+            font-size: 1.2rem;
+        }
+        .auth-container {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        .auth-card {
+            flex: 1;
+            background: #181818;
+            border-radius: 1rem;
+            padding: 2rem;
+            border: 3px solid;
+            border-image: linear-gradient(var(--gradient-angle, 45deg), #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            position: relative;
+            overflow: hidden;
+            animation: animateGradient 6s linear infinite;
+        }
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 1rem;
+            z-index: -1;
+            animation: rotateGradient 4s ease infinite;
+        }
+        .auth-title {
+            color: #7fffd4;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .form-control {
+            background: #111;
+            border: 1px solid #7fffd4;
+            color: #fff;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+        .form-control:focus {
+            background: #111;
+            border-color: #7fffd4;
+            color: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(127, 255, 212, 0.25);
+        }
+        .btn-primary {
+            background: #7fffd4;
+            border: none;
+            color: #000;
+            font-weight: bold;
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            background: #5fdfb4;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(127, 255, 212, 0.3);
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .feature-card {
+            background: #181818;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 3px solid;
+            border-image: linear-gradient(var(--gradient-angle, 45deg), #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            animation: animateGradient 6s linear infinite;
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 1rem;
+            z-index: -1;
+            animation: rotateGradient 5s ease infinite;
+        }
+        .feature-card:hover {
+            border-color: #7fffd4;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(127, 255, 212, 0.2);
+        }
+        .feature-icon {
+            font-size: 3rem;
+            color: #7fffd4;
+            margin-bottom: 1rem;
+        }
+        .feature-title {
+            color: #7fffd4;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .feature-desc {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        .stats-preview {
+            background: #181818;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border: 3px solid;
+            border-image: linear-gradient(var(--gradient-angle, 45deg), #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            position: relative;
+            overflow: hidden;
+            animation: animateGradient 6s linear infinite;
+        }
+        .stats-preview::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 1rem;
+            z-index: -1;
+            animation: rotateGradient 6s ease infinite;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: #222;
+            border-radius: 0.5rem;
+        }
+        .stat-number {
+            font-size: 2rem;
+            color: #7fffd4;
+            font-weight: bold;
+        }
+        .stat-label {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        .current-user {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0,0,0,0.8);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            color: #7fffd4;
+            font-size: 0.9rem;
+        }
+        .logout-btn {
+            background: #d33;
+            border: none;
+            color: #fff;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            margin-left: 0.5rem;
+            font-size: 0.8rem;
+        }
+        .logout-btn:hover {
+            background: #b22;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="main-title">
+            <i class="bi bi-grid-3x3-gap"></i> Pokémon Dashboard
+        </div>
+        
+        <div class="subtitle">
+            Gestiona tus Pokémon, equipos y caza de shinys de manera profesional
+        </div>
+
+        <!-- Contenedor de autenticación -->
+        <div id="authSection" class="auth-container">
+            <!-- Login -->
+            <div class="auth-card">
+                <div class="auth-title">
+                    <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                </div>
+                <form id="loginForm">
+                    <input type="text" id="loginUsername" class="form-control" placeholder="Usuario" required>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="Contraseña" required>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-box-arrow-in-right"></i> Entrar
+                    </button>
+                </form>
+            </div>
+
+            <!-- Registro -->
+            <div class="auth-card">
+                <div class="auth-title">
+                    <i class="bi bi-person-plus"></i> Registrarse
+                </div>
+                <form id="registerForm">
+                    <input type="text" id="registerUsername" class="form-control" placeholder="Usuario" required>
+                    <input type="password" id="registerPassword" class="form-control" placeholder="Contraseña" required>
+                    <input type="password" id="registerConfirmPassword" class="form-control" placeholder="Confirmar Contraseña" required>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-person-plus"></i> Crear Cuenta
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sección de usuario logueado -->
+        <div id="userSection" style="display: none;">
+            <div class="current-user">
+                Bienvenido, <span id="currentUsername"></span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="bi bi-box-arrow-left"></i> Salir
+                </button>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-star"></i>
+                    </div>
+                    <div class="feature-title">Shiny Hunter</div>
+                    <div class="feature-desc">
+                        Rastrea tus encuentros de Pokémon shiny con cálculos de probabilidad precisos. 
+                        Soporte para PokeMMO y Pokémon Vanilla.
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="feature-title">Gestión de Equipos</div>
+                    <div class="feature-desc">
+                        Crea y gestiona equipos de hasta 7 Pokémon con análisis de cobertura 
+                        y debilidades automático.
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-collection"></i>
+                    </div>
+                    <div class="feature-title">Base de Datos</div>
+                    <div class="feature-desc">
+                        Mantén una base de datos completa de Pokémon con tipos, 
+                        estadísticas y sistema de favoritos.
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <div class="feature-title">Estadísticas</div>
+                    <div class="feature-desc">
+                        Visualiza gráficas y estadísticas detalladas de tus Pokémon, 
+                        equipos y progreso de shiny hunting.
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-preview">
+                <h4 style="color: #7fffd4; margin-bottom: 1rem;">
+                    <i class="bi bi-bar-chart"></i> Resumen de tu Progreso
+                </h4>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalShinys">0</div>
+                        <div class="stat-label">Pokémon en Shiny</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalEquipos">0</div>
+                        <div class="stat-label">Equipos Creados</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalPokemones">0</div>
+                        <div class="stat-label">Pokémon en Base</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalEncuentros">0</div>
+                        <div class="stat-label">Encuentros Totales</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <button class="btn btn-primary btn-lg" onclick="goToDashboard()">
+                    <i class="bi bi-arrow-right"></i> Ir al Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sistema de usuarios
+        let currentUser = null;
+        let users = JSON.parse(localStorage.getItem('users') || '[]');
+
+        // Verificar si hay usuario logueado
+        function checkLoggedIn() {
+            const loggedInUser = localStorage.getItem('currentUser');
+            if (loggedInUser) {
+                currentUser = JSON.parse(loggedInUser);
+                showUserSection();
+                loadUserStats();
+            }
+        }
+
+        // Mostrar sección de usuario
+        function showUserSection() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('userSection').style.display = 'block';
+            document.getElementById('currentUsername').textContent = currentUser.username;
+        }
+
+        // Mostrar sección de autenticación
+        function showAuthSection() {
+            document.getElementById('authSection').style.display = 'flex';
+            document.getElementById('userSection').style.display = 'none';
+        }
+
+        // Cargar estadísticas del usuario
+        function loadUserStats() {
+            const userData = getUserData();
+            
+            document.getElementById('totalShinys').textContent = userData.shinys.length;
+            document.getElementById('totalEquipos').textContent = userData.equipos.length;
+            document.getElementById('totalPokemones').textContent = userData.pokemonesBase.length;
+            
+            const totalEncuentros = userData.shinys.reduce((total, shiny) => total + (shiny.encuentros || 0), 0);
+            document.getElementById('totalEncuentros').textContent = totalEncuentros;
+        }
+
+        // Obtener datos del usuario actual
+        function getUserData() {
+            if (!currentUser) return { shinys: [], equipos: [], pokemonesBase: [] };
+            
+            return {
+                shinys: JSON.parse(localStorage.getItem(`shinys_${currentUser.username}`) || '[]'),
+                equipos: JSON.parse(localStorage.getItem(`equipos_${currentUser.username}`) || '[]'),
+                pokemonesBase: JSON.parse(localStorage.getItem(`pokemonesBase_${currentUser.username}`) || '[]')
+            };
+        }
+
+        // Guardar datos del usuario
+        function saveUserData(type, data) {
+            if (!currentUser) return;
+            localStorage.setItem(`${type}_${currentUser.username}`, JSON.stringify(data));
+        }
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                showUserSection();
+                loadUserStats();
+                
+                Swal.fire({
+                    title: '¡Bienvenido!',
+                    text: `Has iniciado sesión como ${username}`,
+                    icon: 'success',
+                    background: '#181818',
+                    color: '#fff',
+                    confirmButtonColor: '#7fffd4'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Usuario o contraseña incorrectos',
+                    icon: 'error',
+                    background: '#181818',
+                    color: '#fff',
+                    confirmButtonColor: '#d33'
+                });
+            }
+        });
+
+        // Registro
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Las contraseñas no coinciden',
+                    icon: 'error',
+                    background: '#181818',
+                    color: '#fff',
+                    confirmButtonColor: '#d33'
+                });
+                return;
+            }
+            
+            if (users.find(u => u.username === username)) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'El usuario ya existe',
+                    icon: 'error',
+                    background: '#181818',
+                    color: '#fff',
+                    confirmButtonColor: '#d33'
+                });
+                return;
+            }
+            
+            const newUser = { username, password };
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            // Inicializar datos del usuario
+            saveUserData('shinys', []);
+            saveUserData('equipos', []);
+            saveUserData('pokemonesBase', []);
+            
+            Swal.fire({
+                title: '¡Cuenta creada!',
+                text: 'Tu cuenta ha sido creada exitosamente',
+                icon: 'success',
+                background: '#181818',
+                color: '#fff',
+                confirmButtonColor: '#7fffd4'
+            });
+            
+            // Limpiar formulario
+            document.getElementById('registerForm').reset();
+        });
+
+        // Logout
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            showAuthSection();
+            
+            Swal.fire({
+                title: 'Sesión cerrada',
+                text: 'Has cerrado sesión exitosamente',
+                icon: 'info',
+                background: '#181818',
+                color: '#fff',
+                confirmButtonColor: '#7fffd4'
+            });
+        }
+
+        // Ir al dashboard
+        function goToDashboard() {
+            window.location.href = 'lobby.html';
+        }
+
+        // Inicializar
+        checkLoggedIn();
+    </script>
+</body>
+</html>

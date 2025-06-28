@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Dashboard</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <script src="js/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --gradient-angle: 45deg;
+        }
+        @keyframes animateGradient {
+            0% { --gradient-angle: 0deg; }
+            100% { --gradient-angle: 360deg; }
+        }
+        .dashboard-container, .poke-item, .team-item, .prob-box, .search-box {
+            border-width: 4px;
+            border-style: solid;
+            border-image: linear-gradient(var(--gradient-angle, 45deg), #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            animation: animateGradient 6s linear infinite;
+            transition: box-shadow 0.3s;
+        }
+        .poke-item, .team-item, .prob-box, .search-box {
+            border-width: 3px;
+        }
+        .pulse-animation {
+            box-shadow: 0 0 0 6px rgba(255,255,0,0.7);
+            animation: pulseYellow 1s ease-out;
+        }
+        @keyframes pulseYellow {
+            0% { box-shadow: 0 0 0 0 rgba(255,255,0,0.7);}
+            70% { box-shadow: 0 0 0 15px rgba(255,255,0,0);}
+            100% { box-shadow: 0 0 0 0 rgba(255,255,0,0);}
+        }
+        body {
+            min-height: 100vh;
+            min-width: 100vw;
+            background: url('a.gif') center center/cover no-repeat fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dashboard-container {
+            border: 4px solid;
+            border-image: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            background: rgba(0,0,0,0.95);
+            border-radius: 2rem;
+            box-shadow: 0 0 32px #000a;
+            padding: 2rem 2.5rem;
+            width: 800px;
+            max-width: 98vw;
+            color: #fff;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+        .dashboard-container::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 2rem;
+            z-index: -1;
+            animation: rotateGradient 3s ease infinite;
+        }
+        @keyframes rotateGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .dashboard-title {
+            text-align: center;
+            font-weight: bold;
+            color: #7fffd4;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+        .nav-tabs {
+            border-bottom: 1px solid #444;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-tabs::before {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 100%;
+            animation: rotateGradient 4s ease infinite;
+        }
+        .nav-tabs .nav-link {
+            color: #7fffd4;
+            border: none;
+            background: transparent;
+            margin-right: 0.5rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            padding: 0.5rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-tabs .nav-link::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 0.5rem 0.5rem 0 0;
+            z-index: -1;
+            animation: rotateGradient 3s ease infinite;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .nav-tabs .nav-link:hover::before {
+            opacity: 0.3;
+        }
+        .nav-tabs .nav-link.active {
+            background: #7fffd4;
+            color: #000;
+            font-weight: bold;
+        }
+        .nav-tabs .nav-link.active::before {
+            opacity: 0.5;
+        }
+        .tab-content {
+            min-height: 400px;
+        }
+        .add-btn {
+            background: #222;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 0.5rem;
+            font-size: 1.2rem;
+            transition: background 0.2s;
+        }
+        .add-btn:hover {
+            background: #444;
+        }
+        .poke-item, .team-item {
+            border: 3px solid;
+            border-image: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            display: flex;
+            align-items: center;
+            background: #181818;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            gap: 0.7rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .poke-item::before, .team-item::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 1rem;
+            z-index: -1;
+            animation: rotateGradient 4s ease infinite;
+        }
+        .poke-img {
+            width: 50px;
+            height: 50px;
+            object-fit: scale-down;
+            background: #222;
+            border-radius: 1rem;
+            padding: 2px;
+        }
+        .poke-types {
+            display: flex;
+            gap: 0.3rem;
+        }
+        .poke-type {
+            background: #333;
+            border-radius: 0.5rem;
+            padding: 0.1rem 0.6rem;
+            font-size: 0.9em;
+            color: #fff;
+            border: 1px solid #7fffd4;
+        }
+        .poke-actions button {
+            margin-left: 0.3rem;
+        }
+        .prob-box {
+            border: 3px solid;
+            border-image: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            margin-top: 1.5rem;
+            background: rgba(17,17,17,0.85);
+            border-radius: 1rem;
+            padding: 1rem;
+            color: #fff;
+            font-size: 0.95rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .prob-box::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 1rem;
+            z-index: -1;
+            animation: rotateGradient 5s ease infinite;
+        }
+        .search-box {
+            border: 2px solid;
+            border-image: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            margin-bottom: 1rem;
+            width: 100%;
+            background: rgba(17,17,17,0.85);
+            color: #fff;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .search-box::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 0.5rem;
+            z-index: -1;
+            animation: rotateGradient 6s ease infinite;
+        }
+        .swal2-select {
+            background: #111 !important;
+            color: #fff !important;
+            border: 1px solid #7fffd4;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+        .stats-box {
+            font-size: 0.8em;
+            color: #7fffd4;
+            margin-top: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div style="position: absolute; top: 1.5rem; left: 2rem; z-index: 10;">
+            <button class="btn btn-outline-info btn-sm" onclick="window.location.href='index.html'">
+                <i class="bi bi-house"></i> Inicio
+            </button>
+        </div>
+        <div class="dashboard-title">
+            Pokémon Dashboard <i class="bi bi-grid-3x3-gap"></i>
+            <div style="position: absolute; top: 1rem; right: 1rem; font-size: 0.9rem; color: #7fffd4;">
+                <span id="currentUserDisplay"></span>
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()" style="margin-left: 0.5rem;">
+                    <i class="bi bi-box-arrow-left"></i> Salir
+                </button>
+            </div>
+        </div>
+        
+        <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="shinys-tab" data-bs-toggle="tab" data-bs-target="#shinys" type="button" role="tab">
+                    <i class="bi bi-star"></i> Shinys
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="equipos-tab" data-bs-toggle="tab" data-bs-target="#equipos" type="button" role="tab">
+                    <i class="bi bi-people"></i> Equipos
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pokemones-tab" data-bs-toggle="tab" data-bs-target="#pokemones" type="button" role="tab">
+                    <i class="bi bi-collection"></i> Pokemones Base
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sitios-tab" data-bs-toggle="tab" data-bs-target="#sitios" type="button" role="tab">
+                    <i class="bi bi-geo-alt"></i> Sitios de encuentro
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="dashboardTabContent">
+            <!-- Tab Shinys -->
+            <div class="tab-pane fade show active" id="shinys" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>Shiny Hunter</h5>
+                    <button class="add-btn" id="addShinyBtn" title="Agregar Pokémon"><i class="bi bi-plus"></i></button>
+                </div>
+                <div id="shinyList"></div>
+                <div id="shinyProbBox" class="prob-box"></div>
+                <div class="text-center mt-3">
+                    <button id="toggleProbBtn" class="btn btn-secondary mb-2">Cambiar a modo Pokémon Vanilla</button><br>
+                    <button id="infoBtn" class="btn btn-info">ℹ️ Información</button>
+                    <div id="probMode" class="mt-2" style="color:#7fffd4; font-weight:bold;">Modo actual: PokeMMO (1 entre 30,000)</div>
+                </div>
+            </div>
+            
+            <!-- Tab Equipos -->
+            <div class="tab-pane fade" id="equipos" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>Equipos Pokémon</h5>
+                    <button class="add-btn" id="addTeamBtn" title="Agregar Equipo"><i class="bi bi-plus"></i></button>
+                </div>
+                <div id="teamList"></div>
+            </div>
+            
+            <!-- Tab Pokemones Base -->
+            <div class="tab-pane fade" id="pokemones" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>Pokemones Base</h5>
+                    <button class="add-btn" id="addPokeBtn" title="Agregar Pokémon"><i class="bi bi-plus"></i></button>
+                </div>
+                <input type="text" id="searchBox" class="search-box" placeholder="Buscar por nombre o número...">
+                <div id="pokeList"></div>
+            </div>
+            <!-- Tab Sitios de encuentro -->
+            <div class="tab-pane fade" id="sitios" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>Sitios de encuentro</h5>
+                    <button class="add-btn" id="addSitioBtn" title="Agregar sitio"><i class="bi bi-plus"></i></button>
+                </div>
+                <div id="sitiosList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sistema de usuarios
+        let currentUser = null;
+        
+        // Verificar autenticación
+        function checkAuth() {
+            const loggedInUser = localStorage.getItem('currentUser');
+            if (!loggedInUser) {
+                Swal.fire({
+                    title: 'Acceso denegado',
+                    text: 'Debes iniciar sesión para acceder al dashboard',
+                    icon: 'warning',
+                    background: '#181818',
+                    color: '#fff',
+                    confirmButtonText: 'Ir al inicio',
+                    confirmButtonColor: '#7fffd4'
+                }).then(() => {
+                    window.location.href = 'index.html';
+                });
+                return false;
+            }
+            currentUser = JSON.parse(loggedInUser);
+            return true;
+        }
+        
+        // Obtener datos del usuario actual
+        function getUserData() {
+            if (!currentUser) return { shinys: [], equipos: [], pokemonesBase: [], sitios: [] };
+            
+            return {
+                shinys: JSON.parse(localStorage.getItem(`shinys_${currentUser.username}`) || '[]'),
+                equipos: JSON.parse(localStorage.getItem(`equipos_${currentUser.username}`) || '[]'),
+                pokemonesBase: JSON.parse(localStorage.getItem(`pokemonesBase_${currentUser.username}`) || '[]'),
+                sitios: JSON.parse(localStorage.getItem(`sitios_${currentUser.username}`) || '[]')
+            };
+        }
+        
+        // Guardar datos del usuario
+        function saveUserData(type, data) {
+            if (!currentUser) return;
+            localStorage.setItem(`${type}_${currentUser.username}`, JSON.stringify(data));
+        }
+        
+        // Logout
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        }
+
+        // Variables globales
+        let shinyBase = 30000;
+        let shinyMode = 'pokemmo';
+        let pokesBasePicker = [];
+        
+        // Tipos y tabla de relaciones
+        const tipos = [
+            "Normal","Fuego","Agua","Planta","Eléctrico","Hielo","Lucha","Veneno","Tierra","Volador","Psíquico","Bicho","Roca","Fantasma","Dragón","Siniestro","Acero","Hada"
+        ];
+        const tablaTipos = {
+            "Fuego": { debil: ["Agua","Roca","Tierra"], fuerte: ["Planta","Bicho","Hielo","Acero"], resiste: ["Fuego","Planta","Hielo","Bicho","Acero","Hada"] },
+            "Agua": { debil: ["Eléctrico","Planta"], fuerte: ["Fuego","Roca","Tierra"], resiste: ["Fuego","Agua","Hielo","Acero"] },
+            "Planta": { debil: ["Fuego","Bicho","Volador","Hielo","Veneno"], fuerte: ["Agua","Roca","Tierra"], resiste: ["Agua","Planta","Eléctrico","Tierra"] },
+            "Eléctrico": { debil: ["Tierra"], fuerte: ["Agua","Volador"], resiste: ["Eléctrico","Acero","Volador"] },
+            "Roca": { debil: ["Agua","Planta","Lucha","Tierra","Acero"], fuerte: ["Fuego","Hielo","Bicho","Volador"], resiste: ["Fuego","Normal","Veneno","Volador"] },
+            "Tierra": { debil: ["Agua","Planta","Hielo"], fuerte: ["Fuego","Roca","Eléctrico","Veneno","Acero"], resiste: ["Roca","Veneno"], inmune: ["Eléctrico"] },
+            "Volador": { debil: ["Eléctrico","Roca","Hielo"], fuerte: ["Planta","Bicho","Lucha"], resiste: ["Planta","Bicho","Lucha"], inmune: ["Tierra"] },
+            "Bicho": { debil: ["Fuego","Volador","Roca"], fuerte: ["Planta","Psíquico","Siniestro"], resiste: ["Planta","Lucha","Tierra"] },
+            "Hielo": { debil: ["Fuego","Lucha","Roca","Acero"], fuerte: ["Planta","Tierra","Volador","Dragón"], resiste: ["Hielo"] },
+            "Lucha": { debil: ["Volador","Psíquico","Hada"], fuerte: ["Normal","Roca","Acero","Hielo","Siniestro"], resiste: ["Bicho","Roca","Siniestro"] },
+            "Veneno": { debil: ["Tierra","Psíquico"], fuerte: ["Planta","Hada"], resiste: ["Planta","Lucha","Veneno","Bicho","Hada"] },
+            "Psíquico": { debil: ["Bicho","Fantasma","Siniestro"], fuerte: ["Lucha","Veneno"], resiste: ["Psíquico","Lucha"] },
+            "Fantasma": { debil: ["Fantasma","Siniestro"], fuerte: ["Psíquico","Fantasma"], resiste: ["Veneno","Bicho"], inmune: ["Normal","Lucha"] },
+            "Dragón": { debil: ["Hielo","Dragón","Hada"], fuerte: ["Dragón"], resiste: ["Fuego","Agua","Planta","Eléctrico"] },
+            "Siniestro": { debil: ["Lucha","Bicho","Hada"], fuerte: ["Psíquico","Fantasma"], resiste: ["Fantasma","Siniestro"], inmune: ["Psíquico"] },
+            "Acero": { debil: ["Fuego","Lucha","Tierra"], fuerte: ["Hielo","Roca","Hada"], resiste: ["Normal","Planta","Hielo","Volador","Psíquico","Bicho","Roca","Dragón","Acero","Hada"], inmune: ["Veneno"] },
+            "Hada": { debil: ["Acero","Veneno"], fuerte: ["Lucha","Dragón","Siniestro"], resiste: ["Lucha","Bicho","Siniestro"], inmune: ["Dragón"] },
+            "Normal": { debil: ["Lucha"], fuerte: [], resiste: [], inmune: ["Fantasma"] }
+        };
+
+        // Funciones de utilidad
+        function getPokes() { 
+            const userData = getUserData();
+            return userData.shinys;
+        }
+        function savePokes(pokes) { 
+            saveUserData('shinys', pokes);
+        }
+        function getEquipos() { 
+            const userData = getUserData();
+            return userData.equipos;
+        }
+        function saveEquipos(equipos) { 
+            saveUserData('equipos', equipos);
+        }
+        function getPokemonesBase() { 
+            const userData = getUserData();
+            return userData.pokemonesBase;
+        }
+        function savePokemonesBase(pokes) { 
+            saveUserData('pokemonesBase', pokes);
+        }
+        function getSitios() {
+            const userData = getUserData();
+            return userData.sitios || [];
+        }
+        function saveSitios(sitios) {
+            saveUserData('sitios', sitios);
+        }
+        
+        // Función para aplicar animación pulse
+        function applyPulseAnimation(element) {
+            element.classList.add('pulse-animation');
+            setTimeout(() => {
+                element.classList.remove('pulse-animation');
+            }, 1000);
+        }
+        
+        function calcShinyProb(encuentros) {
+            return 1 - Math.pow(1 - 1/shinyBase, encuentros);
+        }
+        
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function tipoColor(tipo) {
+            const colores = {
+                Normal: '#A8A77A', Fuego: '#EE8130', Agua: '#6390F0', Planta: '#7AC74C', Eléctrico: '#F7D02C',
+                Hielo: '#96D9D6', Lucha: '#C22E28', Veneno: '#A33EA1', Tierra: '#E2BF65', Volador: '#A98FF3',
+                Psíquico: '#F95587', Bicho: '#A6B91A', Roca: '#B6A136', Fantasma: '#735797', Dragón: '#6F35FC',
+                Siniestro: '#705746', Acero: '#B7B7CE', Hada: '#D685AD'
+            };
+            return colores[tipo]||'#fff';
+        }
+        
+        function setSelectColor(select) {
+            const colores = {
+                Normal: '#A8A77A', Fuego: '#EE8130', Agua: '#6390F0', Planta: '#7AC74C', Eléctrico: '#F7D02C',
+                Hielo: '#96D9D6', Lucha: '#C22E28', Veneno: '#A33EA1', Tierra: '#E2BF65', Volador: '#A98FF3',
+                Psíquico: '#F95587', Bicho: '#A6B91A', Roca: '#B6A136', Fantasma: '#735797', Dragón: '#6F35FC',
+                Siniestro: '#705746', Acero: '#B7B7CE', Hada: '#D685AD'
+            };
+            const tipo = select.value;
+            select.style.color = colores[tipo] || '#fff';
+        }
+
+        // Funciones de sincronización
+        function sincronizarConBase(numero, nombre, imagen) {
+            const pokesBase = getPokemonesBase();
+            const pokeBase = pokesBase.find(p => p.numero == numero);
+            if (pokeBase) {
+                pokeBase.nombre = nombre;
+                pokeBase.imagen = imagen;
+                savePokemonesBase(pokesBase);
+            }
+        }
+        
+        function sincronizarCambiosPokemon(numero, nuevoNombre, nuevaImagen) {
+            // Sincronizar con shinys
+            const shinys = getPokes();
+            shinys.forEach(shiny => {
+                if (shiny.numero == numero) {
+                    shiny.nombre = nuevoNombre;
+                    shiny.imagen = nuevaImagen;
+                }
+            });
+            savePokes(shinys);
+            
+            // Sincronizar con equipos
+            const equipos = getEquipos();
+            equipos.forEach(equipo => {
+                equipo.pokes.forEach(poke => {
+                    if (poke.numero == numero) {
+                        poke.nombre = nuevoNombre;
+                        poke.imagen = nuevaImagen;
+                    }
+                });
+            });
+            saveEquipos(equipos);
+        }
+
+        // Funciones de estadísticas
+        function getEstadisticasPokemon(numero) {
+            const shinys = getPokes();
+            const equipos = getEquipos();
+            
+            const shinyData = shinys.find(s => s.numero == numero);
+            const encuentros = shinyData ? shinyData.encuentros : 0;
+            
+            let equiposCount = 0;
+            let totalNivel = 0;
+            let nivelesCount = 0;
+            
+            equipos.forEach(equipo => {
+                equipo.pokes.forEach(poke => {
+                    if (poke.numero == numero) {
+                        equiposCount++;
+                        if (poke.nivel && poke.nivel > 0) {
+                            totalNivel += parseInt(poke.nivel);
+                            nivelesCount++;
+                        }
+                    }
+                });
+            });
+            
+            const promedioNivel = nivelesCount > 0 ? (totalNivel / nivelesCount).toFixed(1) : 0;
+            return { encuentros, equiposCount, promedioNivel };
+        }
+
+        // Funciones de renderizado
+        function renderShinys() {
+            const pokes = getPokes().sort((a, b) => a.numero - b.numero);
+            const pokesBase = getPokemonesBase();
+            
+            // Sincronizar datos
+            pokes.forEach(poke => {
+                if (poke.numero) {
+                    const pokeBase = pokesBase.find(p => p.numero == poke.numero);
+                    if (pokeBase) {
+                        poke.nombre = pokeBase.nombre;
+                        poke.imagen = pokeBase.imagen;
+                    }
+                }
+            });
+            
+            const shinyList = document.getElementById('shinyList');
+            shinyList.innerHTML = '';
+            let totalEncuentros = 0;
+            
+            pokes.forEach((poke, idx) => {
+                totalEncuentros += Number(poke.encuentros);
+                const prob = calcShinyProb(poke.encuentros);
+                const item = document.createElement('div');
+                item.className = 'poke-item';
+                item.innerHTML = `
+                    <span><b>#${poke.numero}</b></span>
+                    <img src="${poke.imagen}" class="poke-img" alt="${poke.nombre}">
+                    <span style="min-width:80px">${poke.nombre}</span>
+                    <span style="color:#7fffd4;font-size:0.95em;">Shiny: ${(prob*100).toFixed(4)}%</span>
+                    <span>Encuentros: <b>${poke.encuentros}</b></span>
+                    <span class="poke-actions">
+                        <button class="btn btn-sm btn-outline-success" onclick="sumEncuentros(${idx},1)">+1</button>
+                        <button class="btn btn-sm btn-outline-success" onclick="sumEncuentros(${idx},2)">+2</button>
+                        <button class="btn btn-sm btn-outline-success" onclick="sumEncuentros(${idx},3)">+3</button>
+                        <button class="btn btn-sm btn-outline-success" onclick="sumEncuentros(${idx},5)">+5</button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="editShiny(${idx})"><i class='bi bi-pencil'></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="delShiny(${idx})"><i class='bi bi-trash'></i></button>
+                    </span>
+                `;
+                item.onclick = (e) => {
+                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'I') return;
+                    showShinyStats(poke);
+                };
+                shinyList.appendChild(item);
+            });
+            renderShinyProbBox(totalEncuentros);
+        }
+        
+        function renderShinyProbBox(totalEncuentros) {
+            const prob = calcShinyProb(totalEncuentros);
+            const probBox = document.getElementById('shinyProbBox');
+            let modo = shinyMode === 'pokemmo' ? 'PokeMMO (1 entre 30,000)' : 'Pokémon Vanilla (1 entre 4,096)';
+            probBox.innerHTML = `
+                <b>Probabilidad de haber visto al menos un shiny:</b> ${(prob*100).toFixed(4)}%<br>
+                <b>Probabilidad de no haber visto ninguno:</b> ${((1-prob)*100).toFixed(4)}%<br>
+                <b>Total de encuentros:</b> ${totalEncuentros}<br>
+                <span style='color:#7fffd4;font-size:0.95em;'>Modo actual: ${modo}</span>
+            `;
+        }
+        
+        function renderEquipos() {
+            const equipos = getEquipos();
+            const pokesBase = getPokemonesBase();
+            
+            // Sincronizar datos
+            equipos.forEach(equipo => {
+                equipo.pokes.forEach(poke => {
+                    if (poke.numero) {
+                        const pokeBase = pokesBase.find(p => p.numero == poke.numero);
+                        if (pokeBase) {
+                            poke.nombre = pokeBase.nombre;
+                            poke.imagen = pokeBase.imagen;
+                            poke.tipos = pokeBase.tipos;
+                        }
+                    }
+                });
+            });
+            
+            const teamList = document.getElementById('teamList');
+            teamList.innerHTML = '';
+            
+            equipos.forEach((equipo, idx) => {
+                const div = document.createElement('div');
+                div.className = 'team-item';
+                div.innerHTML = `
+                    <div style='display:flex;justify-content:space-between;align-items:center;width:100%;'>
+                        <b>Equipo #${idx+1}</b>
+                        <span class='poke-actions'>
+                            <button class='btn btn-sm btn-outline-warning' onclick='editEquipo(${idx});event.stopPropagation();'><i class='bi bi-pencil'></i></button>
+                            <button class='btn btn-sm btn-outline-danger' onclick='delEquipo(${idx});event.stopPropagation();'><i class='bi bi-trash'></i></button>
+                        </span>
+                    </div>
+                    <div style='width:100%;'>
+                        ${equipo.pokes.map(poke => `
+                            <div style='display:flex;align-items:center;gap:0.7rem;margin-bottom:0.5rem;'>
+                                <img src='${poke.imagen}' class='poke-img'>
+                                <span><b>#${poke.numero}</b></span>
+                                <span>${poke.nombre}</span>
+                                <span>Nivel: ${poke.nivel}</span>
+                                <span>Objeto: ${poke.objeto}</span>
+                                <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type'>${t}</span>`).join('')}</span>
+                                ${poke.alfa ? `<span style='color:#ffb347;font-weight:bold;'>Alfa</span>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                div.onclick = () => mostrarCoberturaEquipo(equipo);
+                teamList.appendChild(div);
+            });
+        }
+        
+        function renderPokemonesBase(filtro = '') {
+            const pokes = getPokemonesBase();
+            const pokeList = document.getElementById('pokeList');
+            pokeList.innerHTML = '';
+            
+            let pokesFiltrados = pokes.filter(p =>
+                p.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
+                (p.numero+'').includes(filtro)
+            );
+            
+            pokesFiltrados.forEach((poke, idx) => {
+                const stats = getEstadisticasPokemon(poke.numero);
+                const div = document.createElement('div');
+                div.className = 'poke-item';
+                div.innerHTML = `
+                    <img src='${poke.imagen}' class='poke-img'>
+                    <span><b>#${poke.numero}</b></span>
+                    <span>${poke.nombre}</span>
+                    <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type' style='color:${tipoColor(t)}'>${t}</span>`).join('')}</span>
+                    <div class='stats-box'>
+                        <div>Encuentros: ${stats.encuentros}</div>
+                        <div>Equipos: ${stats.equiposCount}</div>
+                        <div>Nivel prom: ${stats.promedioNivel}</div>
+                    </div>
+                    <span class='poke-actions'>
+                        <button class='btn btn-sm btn-outline-warning' onclick='editPokeBase(${idx});'><i class='bi bi-pencil'></i></button>
+                        <button class='btn btn-sm btn-outline-danger' onclick='delPokeBase(${idx});'><i class='bi bi-trash'></i></button>
+                        <button class='btn btn-sm ${poke.favorito ? 'btn-warning' : 'btn-outline-warning'}' onclick='toggleFavorito(${idx});'><i class='bi bi-star${poke.favorito ? '-fill' : ''}'></i></button>
+                    </span>
+                `;
+                pokeList.appendChild(div);
+            });
+        }
+
+        // Funciones de shinys
+        function sumEncuentros(idx, n) {
+            const pokes = getPokes();
+            pokes[idx].encuentros = Number(pokes[idx].encuentros) + n;
+            savePokes(pokes);
+            renderShinys();
+            
+            // Aplicar animación pulse al elemento del Pokémon
+            const shinyList = document.getElementById('shinyList');
+            const pokeElements = shinyList.querySelectorAll('.poke-item');
+            if (pokeElements[idx]) {
+                applyPulseAnimation(pokeElements[idx]);
+            }
+        }
+        
+        function delShiny(idx) {
+            const pokes = getPokes();
+            Swal.fire({
+                title: '¿Eliminar Pokémon?',
+                text: 'Esta acción no se puede deshacer.',
+                background: '#181818',
+                color: '#fff',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#222'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    pokes.splice(idx, 1);
+                    savePokes(pokes);
+                    renderShinys();
+                }
+            });
+        }
+        
+        function editShiny(idx) {
+            const pokes = getPokes();
+            const poke = pokes[idx];
+            Swal.fire({
+                title: 'Editar Pokémon',
+                html: `
+                    <button type='button' class='btn btn-info btn-sm' style='margin-bottom:0.5rem' onclick='seleccionarPokemonBaseShiny()'>Seleccionar de base</button><br>
+                    <h1>Nombre</h1>
+                    <input id='swal-nombre' class='swal2-input' placeholder='Nombre' value='${poke.nombre}'>
+                    <h1>Imagen</h1>
+                    <input id='swal-imagen' class='swal2-file' type='file' accept='image/*'>
+                    <img id='swal-preview' src='${poke.imagen}' style='width:40px;display:block;margin:0.5rem auto;'>
+                    <h1>N° Pokédex</h1>
+                    <input id='swal-numero' class='swal2-input' placeholder='N° Pokédex' type='number' value='${poke.numero}'>
+                    <h1>Encuentros</h1>
+                    <input id='swal-encuentros' class='swal2-input' placeholder='Encuentros' type='number' value='${poke.encuentros}'>`,
+                background: '#181818',
+                color: '#fff',
+                confirmButtonText: 'Guardar',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    document.getElementById('swal-imagen').addEventListener('change', function(e) {
+                        if (e.target.files && e.target.files[0]) {
+                            fileToBase64(e.target.files[0]).then(base64 => {
+                                document.getElementById('swal-preview').src = base64;
+                            });
+                        }
+                    });
+                },
+                preConfirm: async () => {
+                    let imagen = poke.imagen;
+                    const fileInput = document.getElementById('swal-imagen');
+                    if (fileInput.files && fileInput.files[0]) {
+                        imagen = await fileToBase64(fileInput.files[0]);
+                    } else {
+                        imagen = document.getElementById('swal-preview').src;
+                    }
+                    return {
+                        nombre: document.getElementById('swal-nombre').value,
+                        imagen: imagen,
+                        numero: Number(document.getElementById('swal-numero').value),
+                        encuentros: Number(document.getElementById('swal-encuentros').value)
+                    };
+                }
+            }).then(res => {
+                if (res.isConfirmed) {
+                    pokes[idx] = res.value;
+                    savePokes(pokes);
+                    sincronizarConBase(res.value.numero, res.value.nombre, res.value.imagen);
+                    renderShinys();
+                }
+            });
+        }
+        
+        function showShinyStats(poke) {
+            const prob = calcShinyProb(poke.encuentros);
+            const notProb = 1 - prob;
+            let modo = shinyMode === 'pokemmo' ? 'PokeMMO (1 entre 30,000)' : 'Pokémon Vanilla (1 entre 4,096)';
+            Swal.fire({
+                title: `${poke.nombre} (#${poke.numero})`,
+                html: `<canvas id='pokeChart' width='180' height='180'></canvas><br>
+                       <b>Encuentros:</b> ${poke.encuentros}<br>
+                       <b>Prob. al menos 1 shiny:</b> ${(prob*100).toFixed(4)}%<br>
+                       <b>Prob. ningún shiny:</b> ${(notProb*100).toFixed(4)}%<br>
+                       <span style='color:#7fffd4;font-size:0.95em;'>Modo actual: ${modo}</span>`,
+                background: '#181818',
+                color: '#fff',
+                didOpen: () => {
+                    const ctx = document.getElementById('pokeChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Shiny', 'No shiny'],
+                            datasets: [{
+                                data: [prob, notProb],
+                                backgroundColor: ['#ffb6e6', '#222'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            cutout: '70%',
+                            plugins: {
+                                legend: {display: false},
+                                tooltip: {enabled: false}
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // Funciones de equipos
+        function delEquipo(idx) {
+            const equipos = getEquipos();
+            Swal.fire({
+                title: '¿Eliminar equipo?',
+                text: 'Esta acción no se puede deshacer.',
+                background: '#181818',
+                color: '#fff',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#222'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    equipos.splice(idx, 1);
+                    saveEquipos(equipos);
+                    renderEquipos();
+                }
+            });
+        }
+        
+        function editEquipo(idx) {
+            agregarEditarEquipo(idx);
+        }
+        
+        function mostrarCoberturaEquipo(equipo) {
+            let freq = {};
+            let cobertura = new Set();
+            let debilidad = new Set();
+            equipo.pokes.forEach(poke => {
+                poke.tipos.forEach(tipo => {
+                    freq[tipo] = (freq[tipo]||0)+1;
+                    if(tablaTipos[tipo]) {
+                        (tablaTipos[tipo].fuerte||[]).forEach(t=>cobertura.add(t));
+                        (tablaTipos[tipo].debil||[]).forEach(t=>debilidad.add(t));
+                    }
+                });
+            });
+            let coberturaArr = Array.from(cobertura).filter(t=>!debilidad.has(t));
+            let debilidadArr = Array.from(debilidad);
+            
+            Swal.fire({
+                title: 'Cobertura y debilidades',
+                html: `<canvas id='teamChart' width='220' height='220'></canvas><br>
+                       <b>Tipos en el equipo:</b> ${Object.keys(freq).length ? Object.entries(freq).map(([t,c])=>`${t} (${c})`).join(', ') : 'Ninguno'}<br>
+                       <b>Cobertura fuerte contra:</b> ${coberturaArr.length ? coberturaArr.join(', ') : 'Ninguno'}<br>
+                       <b>Debilidades:</b> ${debilidadArr.length ? debilidadArr.join(', ') : 'Ninguna'}`,
+                background: '#181818',
+                color: '#fff',
+                width: 500,
+                didOpen: () => {
+                    const ctx = document.getElementById('teamChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(freq),
+                            datasets: [{
+                                data: Object.values(freq),
+                                backgroundColor: Object.keys(freq).map(t=>tipoColor(t)),
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            cutout: '70%',
+                            plugins: {
+                                legend: {display: true, labels: {color:'#fff'}},
+                                tooltip: {enabled: true}
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // Funciones de pokemones base
+        function delPokeBase(idx) {
+            const pokes = getPokemonesBase();
+            Swal.fire({
+                title: '¿Eliminar Pokémon?',
+                text: 'Esta acción no se puede deshacer.',
+                background: '#181818',
+                color: '#fff',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#222'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    pokes.splice(idx, 1);
+                    savePokemonesBase(pokes);
+                    renderPokemonesBase(document.getElementById('searchBox').value);
+                }
+            });
+        }
+        
+        function editPokeBase(idx) {
+            agregarEditarPokeBase(idx);
+        }
+        
+        function toggleFavorito(idx) {
+            const pokes = getPokemonesBase();
+            pokes[idx].favorito = !pokes[idx].favorito;
+            savePokemonesBase(pokes);
+            renderPokemonesBase(document.getElementById('searchBox').value);
+            
+            // Aplicar animación pulse al elemento del Pokémon
+            const pokeList = document.getElementById('pokeList');
+            const pokeElements = pokeList.querySelectorAll('.poke-item');
+            if (pokeElements[idx]) {
+                applyPulseAnimation(pokeElements[idx]);
+            }
+        }
+
+        // Funciones de selección de pokemon base
+        function seleccionarPokemonBaseShiny() {
+            pokesBasePicker = getPokemonesBase();
+            let html = `<input type='text' id='searchBasePoke' class='swal2-input' placeholder='Buscar por nombre o número...'><div id='basePokeList' style='max-height:250px;overflow-y:auto;margin-top:0.5rem;'>`;
+            html += pokesBasePicker.map((poke, i) => `
+                <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;' onclick='window.selectBasePokeShiny(${i})'>
+                    <img src='${poke.imagen}' style='width:32px;height:32px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+                    <span><b>#${poke.numero}</b></span>
+                    <span>${poke.nombre}</span>
+                    <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type'>${t}</span>`).join('')}</span>
+                </div>
+            `).join('')+`</div>`;
+            Swal.fire({
+                title: 'Seleccionar Pokémon base',
+                html,
+                background: '#181818',
+                color: '#fff',
+                width: 500,
+                showConfirmButton: false,
+                didOpen: () => {
+                    document.getElementById('searchBasePoke').oninput = function() {
+                        const val = this.value.toLowerCase();
+                        const list = document.getElementById('basePokeList');
+                        list.innerHTML = pokesBasePicker.filter(p=>p.nombre.toLowerCase().includes(val)||(p.numero+'').includes(val)).map((poke, i) => `
+                            <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;' onclick='window.selectBasePokeShiny(${i})'>
+                                <img src='${poke.imagen}' style='width:32px;height:32px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+                                <span><b>#${poke.numero}</b></span>
+                                <span>${poke.nombre}</span>
+                                <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type'>${t}</span>`).join('')}</span>
+                            </div>
+                        `).join('');
+                    };
+                }
+            });
+        }
+        
+        // Funciones de equipos
+        function agregarEditarEquipo(idx = null) {
+            const equipos = getEquipos();
+            const equipo = idx !== null ? equipos[idx] : { pokes: [] };
+            
+            let html = `<div id='equipoForm'>`;
+            for (let i = 0; i < 7; i++) {
+                const poke = equipo.pokes[i] || {};
+                html += `
+                    <div style='border:1px solid #444;border-radius:0.5rem;padding:1rem;margin-bottom:1rem;'>
+                        <h3>Pokémon ${i+1}</h3>
+                        <button type='button' class='btn btn-info btn-sm' onclick='mostrarSelectorPokemon(${i})'>Seleccionar de base</button>
+                        <div id='selectorPokemon${i}' style='display:none;background:#222;border-radius:0.5rem;padding:1rem;margin-top:0.5rem;'>
+                            <input type='text' id='searchPoke${i}' class='swal2-input' placeholder='Buscar por nombre o número...' style='margin-bottom:0.5rem;'>
+                            <div id='pokeList${i}' style='max-height:200px;overflow-y:auto;'></div>
+                        </div>
+                        <div style='display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.5rem;'>
+                            <div>
+                                <label>N° Pokédex</label>
+                                <input id='poke${i}Numero' class='swal2-input' type='number' value='${poke.numero || ''}' placeholder='N°'>
+                            </div>
+                            <div>
+                                <label>Nombre</label>
+                                <input id='poke${i}Nombre' class='swal2-input' value='${poke.nombre || ''}' placeholder='Nombre'>
+                            </div>
+                            <div>
+                                <label>Nivel</label>
+                                <input id='poke${i}Nivel' class='swal2-input' type='number' value='${poke.nivel || ''}' placeholder='Nivel'>
+                            </div>
+                            <div>
+                                <label>Objeto</label>
+                                <input id='poke${i}Objeto' class='swal2-input' value='${poke.objeto || ''}' placeholder='Objeto'>
+                            </div>
+                            <div>
+                                <label>Alfa</label>
+                                <input id='poke${i}Alfa' type='checkbox' ${poke.alfa ? 'checked' : ''}>
+                            </div>
+                        </div>
+                        <div style='margin-top:0.5rem;'>
+                            <label>Imagen</label>
+                            <input id='poke${i}Imagen' class='swal2-file' type='file' accept='image/*'>
+                            <img id='poke${i}Preview' src='${poke.imagen || ''}' style='width:40px;display:${poke.imagen ? 'block' : 'none'};margin:0.5rem auto;'>
+                        </div>
+                    </div>
+                `;
+            }
+            html += `</div>`;
+            
+            Swal.fire({
+                title: idx !== null ? 'Editar Equipo' : 'Agregar Equipo',
+                html,
+                background: '#181818',
+                color: '#fff',
+                width: 600,
+                confirmButtonText: 'Guardar',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    // Configurar búsqueda para cada Pokémon
+                    for (let i = 0; i < 7; i++) {
+                        const searchInput = document.getElementById(`searchPoke${i}`);
+                        if (searchInput) {
+                            searchInput.addEventListener('input', function() {
+                                filtrarPokemones(i, this.value);
+                            });
+                        }
+                        
+                        const fileInput = document.getElementById(`poke${i}Imagen`);
+                        if (fileInput) {
+                            fileInput.addEventListener('change', function(e) {
+                                if (e.target.files && e.target.files[0]) {
+                                    fileToBase64(e.target.files[0]).then(base64 => {
+                                        document.getElementById(`poke${i}Preview`).src = base64;
+                                        document.getElementById(`poke${i}Preview`).style.display = 'block';
+                                    });
+                                }
+                            });
+                        }
+                    }
+                },
+                preConfirm: async () => {
+                    const pokes = [];
+                    for (let i = 0; i < 7; i++) {
+                        const numero = document.getElementById(`poke${i}Numero`).value;
+                        const nombre = document.getElementById(`poke${i}Nombre`).value;
+                        const nivel = document.getElementById(`poke${i}Nivel`).value;
+                        const objeto = document.getElementById(`poke${i}Objeto`).value;
+                        const alfa = document.getElementById(`poke${i}Alfa`).checked;
+                        
+                        if (numero && nombre) {
+                            let imagen = document.getElementById(`poke${i}Preview`).src;
+                            const fileInput = document.getElementById(`poke${i}Imagen`);
+                            if (fileInput.files && fileInput.files[0]) {
+                                imagen = await fileToBase64(fileInput.files[0]);
+                            }
+                            
+                            // Obtener tipos del pokemon base
+                            const pokesBase = getPokemonesBase();
+                            const pokeBase = pokesBase.find(p => p.numero == numero);
+                            const tipos = pokeBase ? pokeBase.tipos : [];
+                            
+                            pokes.push({
+                                numero: Number(numero),
+                                nombre,
+                                nivel: Number(nivel) || 0,
+                                objeto,
+                                alfa,
+                                imagen,
+                                tipos
+                            });
+                        }
+                    }
+                    return { pokes };
+                }
+            }).then(res => {
+                if (res.isConfirmed) {
+                    if (idx !== null) {
+                        equipos[idx] = res.value;
+                    } else {
+                        equipos.push(res.value);
+                        // Aplicar animación pulse al dashboard cuando se agrega nuevo equipo
+                        const dashboard = document.querySelector('.dashboard-container');
+                        applyPulseAnimation(dashboard);
+                    }
+                    saveEquipos(equipos);
+                    renderEquipos();
+                }
+            });
+        }
+        
+        function mostrarSelectorPokemon(pokeIndex) {
+            const selector = document.getElementById(`selectorPokemon${pokeIndex}`);
+            const list = document.getElementById(`pokeList${pokeIndex}`);
+            
+            if (selector.style.display === 'none') {
+                selector.style.display = 'block';
+                cargarListaPokemones(pokeIndex);
+            } else {
+                selector.style.display = 'none';
+            }
+        }
+        
+        function cargarListaPokemones(pokeIndex) {
+            const pokesBase = getPokemonesBase();
+            const list = document.getElementById(`pokeList${pokeIndex}`);
+            
+            list.innerHTML = pokesBase.map((poke, i) => `
+                <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;padding:0.3rem;border-radius:0.3rem;' 
+                     onmouseover='this.style.background="#333"' 
+                     onmouseout='this.style.background="transparent"'
+                     onclick='seleccionarPokemonEquipo(${i}, ${pokeIndex})'>
+                    <img src='${poke.imagen}' style='width:32px;height:32px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+                    <span><b>#${poke.numero}</b></span>
+                    <span>${poke.nombre}</span>
+                    <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type'>${t}</span>`).join('')}</span>
+                </div>
+            `).join('');
+        }
+        
+        function filtrarPokemones(pokeIndex, filtro) {
+            const pokesBase = getPokemonesBase();
+            const list = document.getElementById(`pokeList${pokeIndex}`);
+            const val = filtro.toLowerCase();
+            
+            const pokesFiltrados = pokesBase.filter(p => 
+                p.nombre.toLowerCase().includes(val) || 
+                (p.numero+'').includes(val)
+            );
+            
+            list.innerHTML = pokesFiltrados.map((poke, i) => `
+                <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;padding:0.3rem;border-radius:0.3rem;' 
+                     onmouseover='this.style.background="#333"' 
+                     onmouseout='this.style.background="transparent"'
+                     onclick='seleccionarPokemonEquipo(${pokesBase.indexOf(poke)}, ${pokeIndex})'>
+                    <img src='${poke.imagen}' style='width:32px;height:32px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+                    <span><b>#${poke.numero}</b></span>
+                    <span>${poke.nombre}</span>
+                    <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type'>${t}</span>`).join('')}</span>
+                </div>
+            `).join('');
+        }
+        
+        function seleccionarPokemonEquipo(baseIdx, pokeIndex) {
+            const pokesBase = getPokemonesBase();
+            const poke = pokesBase[baseIdx];
+            
+            const numero = document.getElementById(`poke${pokeIndex}Numero`);
+            const nombre = document.getElementById(`poke${pokeIndex}Nombre`);
+            const preview = document.getElementById(`poke${pokeIndex}Preview`);
+            
+            if (numero) numero.value = poke.numero;
+            if (nombre) nombre.value = poke.nombre;
+            if (preview) {
+                preview.src = poke.imagen;
+                preview.style.display = 'block';
+            }
+            
+            // Ocultar el selector
+            document.getElementById(`selectorPokemon${pokeIndex}`).style.display = 'none';
+        }
+
+        // Funciones de pokemones base
+        function agregarEditarPokeBase(idx = null) {
+            const pokes = getPokemonesBase();
+            const poke = idx !== null ? pokes[idx] : {};
+            
+            Swal.fire({
+                title: idx !== null ? 'Editar Pokémon' : 'Agregar Pokémon',
+                html: `
+                    <h1>N° Pokédex</h1>
+                    <input id='swal-numero' class='swal2-input' placeholder='N° Pokédex' type='number' value='${poke.numero || ''}'>
+                    <h1>Nombre</h1>
+                    <input id='swal-nombre' class='swal2-input' placeholder='Nombre' value='${poke.nombre || ''}'>
+                    <h1>Imagen</h1>
+                    <input id='swal-imagen' class='swal2-file' type='file' accept='image/*'>
+                    <img id='swal-preview' src='${poke.imagen || ''}' style='width:40px;display:${poke.imagen ? 'block' : 'none'};margin:0.5rem auto;'>
+                    <h1>Tipo 1</h1>
+                    <select id='swal-tipo1' class='swal2-select' onchange='setSelectColor(this)'>
+                        <option value=''>Seleccionar tipo</option>
+                        ${tipos.map(t => `<option value='${t}' ${poke.tipos && poke.tipos[0] === t ? 'selected' : ''}>${t}</option>`).join('')}
+                    </select>
+                    <h1>Tipo 2</h1>
+                    <select id='swal-tipo2' class='swal2-select' onchange='setSelectColor(this)'>
+                        <option value=''>Sin segundo tipo</option>
+                        ${tipos.map(t => `<option value='${t}' ${poke.tipos && poke.tipos[1] === t ? 'selected' : ''}>${t}</option>`).join('')}
+                    </select>`,
+                background: '#181818',
+                color: '#fff',
+                confirmButtonText: 'Guardar',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    document.getElementById('swal-imagen').addEventListener('change', function(e) {
+                        if (e.target.files && e.target.files[0]) {
+                            fileToBase64(e.target.files[0]).then(base64 => {
+                                document.getElementById('swal-preview').src = base64;
+                                document.getElementById('swal-preview').style.display = 'block';
+                            });
+                        }
+                    });
+                    setSelectColor(document.getElementById('swal-tipo1'));
+                    setSelectColor(document.getElementById('swal-tipo2'));
+                },
+                preConfirm: async () => {
+                    let imagen = poke.imagen || '';
+                    const fileInput = document.getElementById('swal-imagen');
+                    if (fileInput.files && fileInput.files[0]) {
+                        imagen = await fileToBase64(fileInput.files[0]);
+                    } else {
+                        imagen = document.getElementById('swal-preview').src;
+                    }
+                    
+                    const tipo1 = document.getElementById('swal-tipo1').value;
+                    const tipo2 = document.getElementById('swal-tipo2').value;
+                    const tipos = [tipo1];
+                    if (tipo2) tipos.push(tipo2);
+                    
+                    return {
+                        numero: Number(document.getElementById('swal-numero').value),
+                        nombre: document.getElementById('swal-nombre').value,
+                        imagen: imagen,
+                        tipos: tipos
+                    };
+                }
+            }).then(res => {
+                if (res.isConfirmed) {
+                    if (idx !== null) {
+                        const oldNumero = pokes[idx].numero;
+                        pokes[idx] = res.value;
+                        // Sincronizar cambios con otros CRUDs
+                        if (oldNumero !== res.value.numero) {
+                            sincronizarCambiosPokemon(res.value.numero, res.value.nombre, res.value.imagen);
+                        }
+                    } else {
+                        pokes.push(res.value);
+                        // Aplicar animación pulse al dashboard cuando se agrega nuevo Pokémon base
+                        const dashboard = document.querySelector('.dashboard-container');
+                        applyPulseAnimation(dashboard);
+                    }
+                    savePokemonesBase(pokes);
+                    renderPokemonesBase(document.getElementById('searchBox').value);
+                }
+            });
+        }
+
+        // Event listeners
+        document.getElementById('addShinyBtn').onclick = () => {
+            Swal.fire({
+                title: 'Agregar Pokémon',
+                html: `
+                    <button type='button' class='btn btn-info btn-sm' style='margin-bottom:0.5rem' onclick='seleccionarPokemonBaseShiny()'>Seleccionar de base</button><br>
+                    <h1>Nombre</h1>
+                    <input id='swal-nombre' class='swal2-input' placeholder='Nombre'>
+                    <h1>Imagen</h1>
+                    <input id='swal-imagen' class='swal2-file' type='file' accept='image/*'>
+                    <img id='swal-preview' style='width:40px;display:none;margin:0.5rem auto;'>
+                    <h1>N° Pokédex</h1>
+                    <input id='swal-numero' class='swal2-input' placeholder='N° Pokédex' type='number'>
+                    <h1>Encuentros</h1>
+                    <input id='swal-encuentros' class='swal2-input' placeholder='Encuentros' type='number' value='1'>`,
+                background: '#181818',
+                color: '#fff',
+                confirmButtonText: 'Agregar',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    document.getElementById('swal-imagen').addEventListener('change', function(e) {
+                        if (e.target.files && e.target.files[0]) {
+                            fileToBase64(e.target.files[0]).then(base64 => {
+                                const preview = document.getElementById('swal-preview');
+                                preview.src = base64;
+                                preview.style.display = 'block';
+                            });
+                        }
+                    });
+                },
+                preConfirm: async () => {
+                    let imagen = '';
+                    const fileInput = document.getElementById('swal-imagen');
+                    if (fileInput.files && fileInput.files[0]) {
+                        imagen = await fileToBase64(fileInput.files[0]);
+                    } else {
+                        imagen = document.getElementById('swal-preview').src;
+                    }
+                    return {
+                        nombre: document.getElementById('swal-nombre').value,
+                        imagen: imagen,
+                        numero: Number(document.getElementById('swal-numero').value),
+                        encuentros: Number(document.getElementById('swal-encuentros').value)
+                    };
+                }
+            }).then(res => {
+                if (res.isConfirmed) {
+                    const pokes = getPokes();
+                    pokes.push(res.value);
+                    savePokes(pokes);
+                    renderShinys();
+                    
+                    // Aplicar animación pulse al dashboard
+                    const dashboard = document.querySelector('.dashboard-container');
+                    applyPulseAnimation(dashboard);
+                }
+            });
+        };
+        
+        document.getElementById('addTeamBtn').onclick = () => agregarEditarEquipo();
+        document.getElementById('addPokeBtn').onclick = () => agregarEditarPokeBase();
+        
+        document.getElementById('searchBox').oninput = function() {
+            renderPokemonesBase(this.value);
+        };
+        
+        document.getElementById('infoBtn').onclick = () => {
+            Swal.fire({
+                title: 'Información de probabilidades',
+                html: `Las probabilidades son calculadas en base al sistema de shinys de <b>POKEMMO</b> (1 entre 30,000).<br><br>Puede cambiar los cálculos por los de los juegos originales presionando el botón de abajo (<b>1 entre 4,096</b>).<br><br><a href='https://sprites.pmdcollab.org' target='_blank' style='color:#7fffd4;text-decoration:underline;font-weight:bold;'>Aquí puedes encontrar fácilmente los sprites de los pokemons</a>`,
+                background: '#181818',
+                color: '#fff',
+                confirmButtonText: 'Entendido',
+            });
+        };
+        
+        document.getElementById('toggleProbBtn').onclick = () => {
+            if (shinyMode === 'pokemmo') {
+                shinyBase = 4096;
+                shinyMode = 'vanilla';
+                document.getElementById('toggleProbBtn').innerText = 'Cambiar a modo PokeMMO';
+                document.getElementById('probMode').innerText = 'Modo actual: Pokémon Vanilla (1 entre 4,096)';
+            } else {
+                shinyBase = 30000;
+                shinyMode = 'pokemmo';
+                document.getElementById('toggleProbBtn').innerText = 'Cambiar a modo Pokémon Vanilla';
+                document.getElementById('probMode').innerText = 'Modo actual: PokeMMO (1 entre 30,000)';
+            }
+            renderShinys();
+        };
+
+        window.seleccionarPokemonBaseShiny = seleccionarPokemonBaseShiny;
+        window.selectBasePokeShiny = function(baseIdx) {
+            const poke = pokesBasePicker[baseIdx];
+            const nombre = document.getElementById('swal-nombre');
+            const numero = document.getElementById('swal-numero');
+            const preview = document.getElementById('swal-preview');
+            
+            if (nombre) nombre.value = poke.nombre;
+            if (numero) numero.value = poke.numero;
+            if (preview) {
+                preview.src = poke.imagen;
+                preview.style.display = 'block';
+            }
+            Swal.close();
+            
+            // Agregar automáticamente a la lista de shinys
+            const pokes = getPokes();
+            pokes.push({
+                nombre: poke.nombre,
+                imagen: poke.imagen,
+                numero: poke.numero,
+                encuentros: 1
+            });
+            savePokes(pokes);
+            renderShinys();
+            
+            // Aplicar animación pulse al dashboard
+            const dashboard = document.querySelector('.dashboard-container');
+            applyPulseAnimation(dashboard);
+        };
+
+        // CRUD Sitios de encuentro
+        const regiones = [
+            'Kanto','Johto','Hoenn','Sinnoh','Hisui (versión antigua de Sinnoh)','Teselia (Unova)','Kalos','Alola','Galar','Paldea','Orre','Fiore','Almia','Oblivia','Pasio','Ransei'
+        ];
+        function agregarEditarSitio(idx = null) {
+            const sitios = getSitios();
+            const sitio = idx !== null ? sitios[idx] : { region: '', ruta: '', pokemones: [] };
+            let pokemonesRuta = [...(sitio.pokemones || [])];
+            let pokesBasePicker = getPokemonesBase();
+            let pickerVisible = false;
+            let manualVisible = false;
+            let manualNumero = '';
+            let manualNombre = '';
+
+            function renderPickerDiv() {
+                if (!pickerVisible) return '';
+                return `
+                    <div id='pickerDivSitio' style='background:#181818;border-radius:0.5rem;padding:0.5rem;margin-bottom:0.5rem;'>
+                        <input type='text' id='searchPokeSitio' class='swal2-input' placeholder='Buscar por nombre o número...'>
+                        <div id='pokeBaseListSitio' style='max-height:150px;overflow-y:auto;margin-top:0.5rem;'>
+                            ${pokesBasePicker.map((poke, i) => `
+                                <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;' onclick='window.seleccionarPokeSitio(${i})'>
+                                    <img src='${poke.imagen}' style='width:28px;height:28px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+                                    <span><b>#${poke.numero}</b></span>
+                                    <span>${poke.nombre}</span>
+                                    <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type'>${t}</span>`).join('')}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            function renderManualDiv() {
+                if (!manualVisible) return '';
+                return `
+                    <div id='manualDivSitio' style='background:#181818;border-radius:0.5rem;padding:0.5rem;margin-bottom:0.5rem;'>
+                        <input id='manual-numero' class='swal2-input' placeholder='N° Pokédex' value='${manualNumero}'>
+                        <input id='manual-nombre' class='swal2-input' placeholder='Nombre' value='${manualNombre}'>
+                        <input id='manual-imagen' class='swal2-file' type='file' accept='image/*' style='margin:0.5rem 0;'>
+                        <img id='manual-preview' src='' style='width:40px;display:none;margin:0.5rem auto;'>
+                        <button type='button' class='btn btn-success btn-sm' id='btnAgregarManualConfirm'>Agregar</button>
+                        <button type='button' class='btn btn-outline-secondary btn-sm' id='btnCerrarManual'>Cerrar</button>
+                    </div>
+                `;
+            }
+            function updateSwal() {
+                Swal.update({
+                    html: `
+                        <label>Región</label>
+                        <select id='swal-region' class='swal2-select' style='width:100%;margin-bottom:0.5rem;'>
+                            <option value=''>Selecciona región</option>
+                            ${regiones.map(r => `<option value='${r}' ${sitio.region===r?'selected':''}>${r}</option>`).join('')}
+                        </select>
+                        <label>Ruta</label>
+                        <input id='swal-ruta' class='swal2-input' placeholder='Ruta o lugar' value='${sitio.ruta||''}'>
+                        <div style='margin:0.5rem 0;'>
+                            <button type='button' class='btn btn-info btn-sm' id='btnMostrarPickerPokeSitio'>${pickerVisible ? 'Ocultar' : 'Agregar Pokémon de base'}</button>
+                            <button type='button' class='btn btn-secondary btn-sm' id='btnAgregarManualPokeSitio'>${manualVisible ? 'Ocultar' : 'Agregar manual'}</button>
+                        </div>
+                        ${renderPickerDiv()}
+                        ${renderManualDiv()}
+                        <div id='pokemonesRutaList' style='max-height:180px;overflow-y:auto;background:#222;border-radius:0.5rem;padding:0.5rem;'>
+                            ${pokemonesRuta.map((p,i)=>`
+                                <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;'>
+                                    <img src='${p.imagen||''}' style='width:28px;height:28px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+                                    <span>#${p.numero||''} ${p.nombre}</span>
+                                    <button class='btn btn-sm btn-outline-danger' onclick='window.eliminarPokeSitio(${i})'><i class='bi bi-x'></i></button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `
+                });
+                if (pickerVisible) {
+                    document.getElementById('searchPokeSitio').oninput = function() {
+                        const val = this.value.toLowerCase();
+                        const list = document.getElementById('pokeBaseListSitio');
+                        list.innerHTML = pokesBasePicker.filter(p=>p.nombre.toLowerCase().includes(val)||(p.numero+'').includes(val)).map((poke, i) => `
+                            <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;' onclick='window.seleccionarPokeSitio(${i})'>
+                                <img src='${poke.imagen}' style='width:28px;height:28px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+                                <span><b>#${poke.numero}</b></span>
+                                <span>${poke.nombre}</span>
+                                <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type'>${t}</span>`).join('')}</span>
+                            </div>
+                        `).join('');
+                    };
+                }
+                document.getElementById('btnMostrarPickerPokeSitio').onclick = function() {
+                    pickerVisible = !pickerVisible;
+                    if (pickerVisible) manualVisible = false;
+                    updateSwal();
+                };
+                document.getElementById('btnAgregarManualPokeSitio').onclick = function() {
+                    manualVisible = !manualVisible;
+                    if (manualVisible) pickerVisible = false;
+                    updateSwal();
+                };
+                if (manualVisible) {
+                    document.getElementById('btnAgregarManualConfirm').onclick = async function() {
+                        manualNumero = document.getElementById('manual-numero').value;
+                        manualNombre = document.getElementById('manual-nombre').value;
+                        if (manualNumero && manualNombre) {
+                            let imagen = '';
+                            const fileInput = document.getElementById('manual-imagen');
+                            if (fileInput.files && fileInput.files[0]) {
+                                imagen = await fileToBase64(fileInput.files[0]);
+                            }
+                            pokemonesRuta.push({
+                                numero: manualNumero,
+                                nombre: manualNombre,
+                                imagen: imagen,
+                                tipos: []
+                            });
+                            manualNumero = '';
+                            manualNombre = '';
+                            manualVisible = false;
+                            updateSwal();
+                        }
+                    };
+                    document.getElementById('btnCerrarManual').onclick = function() {
+                        manualVisible = false;
+                        updateSwal();
+                    };
+                    // Agregar evento para previsualizar imagen
+                    const fileInput = document.getElementById('manual-imagen');
+                    if (fileInput) {
+                        fileInput.addEventListener('change', function(e) {
+                            if (e.target.files && e.target.files[0]) {
+                                fileToBase64(e.target.files[0]).then(base64 => {
+                                    const preview = document.getElementById('manual-preview');
+                                    preview.src = base64;
+                                    preview.style.display = 'block';
+                                });
+                            }
+                        });
+                    }
+                }
+            }
+
+            Swal.fire({
+                title: idx !== null ? 'Editar sitio de encuentro' : 'Agregar sitio de encuentro',
+                html: '',
+                background: '#181818',
+                color: '#fff',
+                width: 600,
+                showCancelButton: true,
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    updateSwal();
+                    window.seleccionarPokeSitio = function(baseIdx) {
+                        const poke = pokesBasePicker[baseIdx];
+                        pokemonesRuta.push({
+                            numero: poke.numero,
+                            nombre: poke.nombre,
+                            imagen: poke.imagen,
+                            tipos: poke.tipos
+                        });
+                        updateSwal();
+                    };
+                    window.eliminarPokeSitio = function(i) {
+                        pokemonesRuta.splice(i,1);
+                        updateSwal();
+                    };
+                },
+                preConfirm: () => {
+                    return {
+                        region: document.getElementById('swal-region').value,
+                        ruta: document.getElementById('swal-ruta').value,
+                        pokemones: pokemonesRuta
+                    };
+                }
+            }).then(res => {
+                if (res.isConfirmed) {
+                    if (idx !== null) {
+                        sitios[idx] = res.value;
+                    } else {
+                        sitios.push(res.value);
+                    }
+                    saveSitios(sitios);
+                    renderSitios();
+                }
+            });
+        }
+        window.editSitio = function(idx) { agregarEditarSitio(idx); }
+        
+        function delSitio(idx) {
+            Swal.fire({
+                title: '¿Eliminar sitio?',
+                text: 'Esta acción no se puede deshacer',
+                icon: 'warning',
+                background: '#181818',
+                color: '#fff',
+                showCancelButton: true,
+                confirmButtonText: 'Eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d33'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const sitios = getSitios();
+                    sitios.splice(idx, 1);
+                    saveSitios(sitios);
+                    renderSitios();
+                }
+            });
+        }
+
+        // Inicialización
+        if (checkAuth()) {
+            document.getElementById('currentUserDisplay').textContent = `Usuario: ${currentUser.username}`;
+            renderShinys();
+            renderEquipos();
+            renderPokemonesBase();
+            renderSitios();
+            document.getElementById('addSitioBtn').onclick = () => agregarEditarSitio();
+        }
+
+        function renderSitios() {
+            const sitios = getSitios();
+            const sitiosList = document.getElementById('sitiosList');
+            sitiosList.innerHTML = '';
+            sitios.forEach((sitio, idx) => {
+                const div = document.createElement('div');
+                div.className = 'poke-item';
+                div.innerHTML = `
+                    <b>${sitio.region} - ${sitio.ruta}</b>
+                    <span style='margin-left:1rem;'>Pokémon: <b>${sitio.pokemones.length}</b></span>
+                    <span style='margin-left:1rem;'>
+                        <button class='btn btn-sm btn-outline-warning' onclick='editSitio(${idx});event.stopPropagation();'><i class='bi bi-pencil'></i></button>
+                        <button class='btn btn-sm btn-outline-danger' onclick='delSitio(${idx});event.stopPropagation();'><i class='bi bi-trash'></i></button>
+                    </span>
+                    <div style='width:100%;margin-top:0.5rem;'>
+                        ${sitio.pokemones.map(p=>`<span style='display:inline-block;margin-right:0.5rem;'>
+                            <img src='${p.imagen||''}' style='width:28px;height:28px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+                            <span>#${p.numero||''} ${p.nombre}</span>
+                            <span style='color:#7fffd4;font-size:0.9em;'>Prob: ${(1/sitio.pokemones.length*100).toFixed(2)}%</span>
+                        </span>`).join('')}
+                    </div>
+                `;
+                sitiosList.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html> 
