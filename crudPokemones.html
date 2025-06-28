@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemones Base</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <script src="js/sweetalert2.all.min.js"></script>
+    <style>
+        body {
+            min-height: 100vh;
+            min-width: 100vw;
+            background: url('a.gif') center center/cover no-repeat fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .poke-container {
+            background: rgba(0,0,0,0.95);
+            border-radius: 2rem;
+            box-shadow: 0 0 32px #000a;
+            padding: 2rem 2.5rem;
+            width: 600px;
+            max-width: 98vw;
+            color: #fff;
+            text-align: left;
+        }
+        .poke-title {
+            text-align: center;
+            font-weight: bold;
+            color: #7fffd4;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+        .add-btn {
+            background: #222;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 0.5rem;
+            font-size: 1.2rem;
+            transition: background 0.2s;
+        }
+        .add-btn:hover {
+            background: #444;
+        }
+        .poke-list {
+            margin-top: 1.5rem;
+        }
+        .poke-item {
+            background: #181818;
+            border-radius: 1rem;
+            margin-bottom: 1.2rem;
+            padding: 1rem 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 2px 8px #0004;
+        }
+        .poke-img {
+            width: 50px;
+            height: 50px;
+            object-fit: scale-down;
+            background: #222;
+            border-radius: 1rem;
+            padding: 2px;
+        }
+        .poke-types {
+            display: flex;
+            gap: 0.3rem;
+        }
+        .poke-type {
+            background: #333;
+            border-radius: 0.5rem;
+            padding: 0.1rem 0.6rem;
+            font-size: 0.9em;
+            color: #fff;
+            border: 1px solid #7fffd4;
+        }
+        .poke-alfa {
+            color: #ffb347;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        .poke-actions button {
+            margin-left: 0.3rem;
+        }
+        .swal2-select {
+            background: #111 !important;
+            color: #fff !important;
+            border: 1px solid #7fffd4;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+        .search-box {
+            margin-bottom: 1rem;
+            width: 100%;
+            background: #111;
+            color: #fff;
+            border: 1px solid #7fffd4;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="poke-container">
+        <div class="poke-title">Pokemones Base <i class="bi bi-collection"></i>
+            <button class="add-btn" id="addPokeBtn" title="Agregar Pokémon"><i class="bi bi-plus"></i></button>
+        </div>
+        <input type="text" id="searchBox" class="search-box" placeholder="Buscar por nombre o número...">
+        <div id="pokeList" class="poke-list"></div>
+    </div>
+    <script>
+    const tipos = [
+        "Normal","Fuego","Agua","Planta","Eléctrico","Hielo","Lucha","Veneno","Tierra","Volador","Psíquico","Bicho","Roca","Fantasma","Dragón","Siniestro","Acero","Hada"
+    ];
+    function getPokemonesBase() {
+        return JSON.parse(localStorage.getItem('pokemonesBase') || '[]');
+    }
+    function savePokemonesBase(pokes) {
+        localStorage.setItem('pokemonesBase', JSON.stringify(pokes));
+    }
+    function renderPokemonesBase(filtro = '') {
+        const pokes = getPokemonesBase();
+        const pokeList = document.getElementById('pokeList');
+        pokeList.innerHTML = '';
+        let pokesFiltrados = pokes.filter(p =>
+            p.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
+            (p.numero+'').includes(filtro)
+        );
+        pokesFiltrados.forEach((poke, idx) => {
+            const div = document.createElement('div');
+            div.className = 'poke-item';
+            div.innerHTML = `
+                <img src='${poke.imagen}' class='poke-img'>
+                <span><b>#${poke.numero}</b></span>
+                <span>${poke.nombre}</span>
+                <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type' style='color:${tipoColor(t)}'>${t}</span>`).join('')}</span>
+                <span class='poke-actions'>
+                    <button class='btn btn-sm btn-outline-warning' onclick='editPokeBase(${idx});'><i class='bi bi-pencil'></i></button>
+                    <button class='btn btn-sm btn-outline-danger' onclick='delPokeBase(${idx});'><i class='bi bi-trash'></i></button>
+                </span>
+            `;
+            pokeList.appendChild(div);
+        });
+    }
+    function delPokeBase(idx) {
+        const pokes = getPokemonesBase();
+        Swal.fire({
+            title: '¿Eliminar Pokémon?',
+            text: 'Esta acción no se puede deshacer.',
+            background: '#181818',
+            color: '#fff',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#222'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                pokes.splice(idx, 1);
+                savePokemonesBase(pokes);
+                renderPokemonesBase(document.getElementById('searchBox').value);
+            }
+        });
+    }
+    function editPokeBase(idx) {
+        agregarEditarPokeBase(idx);
+    }
+    document.getElementById('addPokeBtn').onclick = () => agregarEditarPokeBase();
+    document.getElementById('searchBox').oninput = function() {
+        renderPokemonesBase(this.value);
+    };
+    function agregarEditarPokeBase(idx) {
+        const pokes = getPokemonesBase();
+        let poke = idx !== undefined ? pokes[idx] : {imagen:'',numero:'',nivel:'',nombre:'',objeto:'',alfa:false,tipos:[]};
+        Swal.fire({
+            title: idx!==undefined?'Editar Pokémon':'Agregar Pokémon',
+            html: `
+                <input type='file' accept='image/*' id='poke-img' class='swal2-file'><br>
+                <img id='poke-preview' src='${poke.imagen||''}' style='width:40px;${poke.imagen?'display:inline-block':'display:none'};margin:0.3rem 0;'>
+                <input id='poke-numero' class='swal2-input' placeholder='N° Pokédex' type='number' value='${poke.numero||''}'>
+                <input id='poke-nombre' class='swal2-input' placeholder='Nombre' value='${poke.nombre||''}'>
+                <label style='color:#fff;font-size:0.95em;'>Tipo 1:</label>
+                <select id='poke-tipo1' class='swal2-select'><option value=''>---</option>${tipos.map(t=>`<option value='${t}' ${poke.tipos[0]===t?'selected':''}>${t}</option>`).join('')}</select>
+                <label style='color:#fff;font-size:0.95em;'>Tipo 2:</label>
+                <select id='poke-tipo2' class='swal2-select'><option value=''>---</option>${tipos.map(t=>`<option value='${t}' ${poke.tipos[1]===t?'selected':''}>${t}</option>`).join('')}</select>
+            `,
+            background: '#181818',
+            color: '#fff',
+            width: 500,
+            confirmButtonText: idx!==undefined?'Guardar':'Agregar',
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            didOpen: () => {
+                document.getElementById('poke-img').addEventListener('change', function(e) {
+                    if (e.target.files && e.target.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            document.getElementById('poke-preview').src = reader.result;
+                            document.getElementById('poke-preview').style.display = 'inline-block';
+                        };
+                        reader.readAsDataURL(e.target.files[0]);
+                    }
+                });
+                // Colorear selects según tipo
+                const sel1 = document.getElementById('poke-tipo1');
+                const sel2 = document.getElementById('poke-tipo2');
+                setSelectColor(sel1);
+                setSelectColor(sel2);
+                sel1.addEventListener('change', function(){ setSelectColor(sel1); });
+                sel2.addEventListener('change', function(){ setSelectColor(sel2); });
+            },
+            preConfirm: () => {
+                let imagen = document.getElementById('poke-preview').src || '';
+                if(imagen && imagen.startsWith('file://')) imagen = '';
+                let numero = document.getElementById('poke-numero').value;
+                let nombre = document.getElementById('poke-nombre').value;
+                let tipo1 = document.getElementById('poke-tipo1').value;
+                let tipo2 = document.getElementById('poke-tipo2').value;
+                let tiposPoke = [];
+                if(tipo1) tiposPoke.push(tipo1);
+                if(tipo2 && tipo2!==tipo1) tiposPoke.push(tipo2);
+                if(!numero || !nombre) {
+                    Swal.showValidationMessage('Nombre y número son obligatorios');
+                    return false;
+                }
+                return {imagen,numero,nombre,tipos:tiposPoke};
+            }
+        }).then(res => {
+            if(res.isConfirmed) {
+                if(idx!==undefined) pokes[idx] = res.value;
+                else pokes.push(res.value);
+                savePokemonesBase(pokes);
+                renderPokemonesBase(document.getElementById('searchBox').value);
+            }
+        });
+    }
+    function tipoColor(tipo) {
+        const colores = {
+            Normal: '#A8A77A', Fuego: '#EE8130', Agua: '#6390F0', Planta: '#7AC74C', Eléctrico: '#F7D02C',
+            Hielo: '#96D9D6', Lucha: '#C22E28', Veneno: '#A33EA1', Tierra: '#E2BF65', Volador: '#A98FF3',
+            Psíquico: '#F95587', Bicho: '#A6B91A', Roca: '#B6A136', Fantasma: '#735797', Dragón: '#6F35FC',
+            Siniestro: '#705746', Acero: '#B7B7CE', Hada: '#D685AD'
+        };
+        return colores[tipo]||'#fff';
+    }
+    function setSelectColor(select) {
+        const colores = {
+            Normal: '#A8A77A', Fuego: '#EE8130', Agua: '#6390F0', Planta: '#7AC74C', Eléctrico: '#F7D02C',
+            Hielo: '#96D9D6', Lucha: '#C22E28', Veneno: '#A33EA1', Tierra: '#E2BF65', Volador: '#A98FF3',
+            Psíquico: '#F95587', Bicho: '#A6B91A', Roca: '#B6A136', Fantasma: '#735797', Dragón: '#6F35FC',
+            Siniestro: '#705746', Acero: '#B7B7CE', Hada: '#D685AD'
+        };
+        const tipo = select.value;
+        select.style.color = colores[tipo] || '#fff';
+    }
+    // Inicializar
+    renderPokemonesBase();
+    </script>
+</body>
+</html> 
