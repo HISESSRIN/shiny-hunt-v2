@@ -121,6 +121,19 @@
         }
         function renderPokes() {
             const pokes = getPokes().sort((a, b) => a.numero - b.numero);
+            const pokesBase = getPokemonesBase();
+            
+            // Sincronizar datos de shinys con CRUD base
+            pokes.forEach(poke => {
+                if (poke.numero) {
+                    const pokeBase = pokesBase.find(p => p.numero == poke.numero);
+                    if (pokeBase) {
+                        poke.nombre = pokeBase.nombre;
+                        poke.imagen = pokeBase.imagen;
+                    }
+                }
+            });
+            
             const pokeList = document.getElementById('pokeList');
             pokeList.innerHTML = '';
             let totalEncuentros = 0;
@@ -190,12 +203,85 @@
                 }
             });
         }
+        function getPokemonesBase() {
+            return JSON.parse(localStorage.getItem('pokemonesBase') || '[]');
+        }
+        let pokesBasePicker = [];
+        function seleccionarPokemonBaseShiny() {
+            pokesBasePicker = getPokemonesBase();
+            let html = `<input type='text' id='searchBasePoke' class='swal2-input' placeholder='Buscar por nombre o número...'><div id='basePokeList' style='max-height:250px;overflow-y:auto;margin-top:0.5rem;'>`;
+            html += pokesBasePicker.map((poke, i) => `
+                <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;' onclick='window.selectBasePokeShiny(${i})'>
+                    <img src='${poke.imagen}' style='width:32px;height:32px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+                    <span><b>#${poke.numero}</b></span>
+                    <span>${poke.nombre}</span>
+                    <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type'>${t}</span>`).join('')}</span>
+                </div>
+            `).join('')+`</div>`;
+            Swal.fire({
+                title: 'Seleccionar Pokémon base',
+                html,
+                background: '#181818',
+                color: '#fff',
+                width: 500,
+                showConfirmButton: false,
+                didOpen: () => {
+                    document.getElementById('searchBasePoke').oninput = function() {
+                        const val = this.value.toLowerCase();
+                        const list = document.getElementById('basePokeList');
+                        list.innerHTML = pokesBasePicker.filter(p=>p.nombre.toLowerCase().includes(val)||(p.numero+'').includes(val)).map((poke, i) => `
+                            <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;' onclick='window.selectBasePokeShiny(${i})'>
+                                <img src='${poke.imagen}' style='width:32px;height:32px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+                                <span><b>#${poke.numero}</b></span>
+                                <span>${poke.nombre}</span>
+                                <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type'>${t}</span>`).join('')}</span>
+                            </div>
+                        `).join('');
+                    };
+                }
+            });
+        }
+        window.seleccionarPokemonBaseShiny = seleccionarPokemonBaseShiny;
+        window.selectBasePokeShiny = function(baseIdx) {
+            const poke = pokesBasePicker[baseIdx];
+            const nombre = document.getElementById('swal-nombre');
+            const numero = document.getElementById('swal-numero');
+            const preview = document.getElementById('swal-preview');
+            if (nombre) nombre.value = poke.nombre;
+            if (numero) numero.value = poke.numero;
+            if (preview) {
+                preview.src = poke.imagen;
+                preview.style.display = 'block';
+            }
+            Swal.close();
+            
+            // Agregar automáticamente a la lista de shinys
+            const pokes = getPokes();
+            pokes.push({
+                nombre: poke.nombre,
+                imagen: poke.imagen,
+                numero: poke.numero,
+                encuentros: 1
+            });
+            savePokes(pokes);
+            renderPokes();
+        };
+        function sincronizarConBase(numero, nombre, imagen) {
+            const pokesBase = JSON.parse(localStorage.getItem('pokemonesBase') || '[]');
+            const pokeBase = pokesBase.find(p => p.numero == numero);
+            if (pokeBase) {
+                pokeBase.nombre = nombre;
+                pokeBase.imagen = imagen;
+                localStorage.setItem('pokemonesBase', JSON.stringify(pokesBase));
+            }
+        }
         function editPoke(idx) {
             const pokes = getPokes();
             const poke = pokes[idx];
             Swal.fire({
                 title: 'Editar Pokémon',
                 html: `
+                    <button type='button' class='btn btn-info btn-sm' style='margin-bottom:0.5rem' onclick='seleccionarPokemonBaseShiny()'>Seleccionar de base</button><br>
                     <h1>Nombre</h1>
                     <input id='swal-nombre' class='swal2-input' placeholder='Nombre' value='${poke.nombre}'>
                     <h1>Imagen</h1>
@@ -238,6 +324,10 @@
                 if (res.isConfirmed) {
                     pokes[idx] = res.value;
                     savePokes(pokes);
+                    
+                    // Sincronizar con CRUD base
+                    sincronizarConBase(res.value.numero, res.value.nombre, res.value.imagen);
+                    
                     renderPokes();
                 }
             });
@@ -282,6 +372,7 @@
             Swal.fire({
                 title: 'Agregar Pokémon',
                 html: `
+                    <button type='button' class='btn btn-info btn-sm' style='margin-bottom:0.5rem' onclick='seleccionarPokemonBaseShiny()'>Seleccionar de base</button><br>
                     <h1>Nombre</h1>
                     <input id='swal-nombre' class='swal2-input' placeholder='Nombre'>
                     <h1>Imagen</h1>

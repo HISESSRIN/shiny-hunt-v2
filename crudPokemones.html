@@ -127,6 +127,41 @@
     function savePokemonesBase(pokes) {
         localStorage.setItem('pokemonesBase', JSON.stringify(pokes));
     }
+    function getShinys() {
+        return JSON.parse(localStorage.getItem('pokes') || '[]');
+    }
+    function getEquipos() {
+        return JSON.parse(localStorage.getItem('equipos') || '[]');
+    }
+    function getEstadisticasPokemon(numero) {
+        const shinys = getShinys();
+        const equipos = getEquipos();
+        
+        // Encuentros en shinys
+        const shinyData = shinys.find(s => s.numero == numero);
+        const encuentros = shinyData ? shinyData.encuentros : 0;
+        
+        // Equipos donde aparece y promedio de nivel
+        let equiposCount = 0;
+        let totalNivel = 0;
+        let nivelesCount = 0;
+        
+        equipos.forEach(equipo => {
+            equipo.pokes.forEach(poke => {
+                if (poke.numero == numero) {
+                    equiposCount++;
+                    if (poke.nivel && poke.nivel > 0) {
+                        totalNivel += parseInt(poke.nivel);
+                        nivelesCount++;
+                    }
+                }
+            });
+        });
+        
+        const promedioNivel = nivelesCount > 0 ? (totalNivel / nivelesCount).toFixed(1) : 0;
+        
+        return { encuentros, equiposCount, promedioNivel };
+    }
     function renderPokemonesBase(filtro = '') {
         const pokes = getPokemonesBase();
         const pokeList = document.getElementById('pokeList');
@@ -136,6 +171,7 @@
             (p.numero+'').includes(filtro)
         );
         pokesFiltrados.forEach((poke, idx) => {
+            const stats = getEstadisticasPokemon(poke.numero);
             const div = document.createElement('div');
             div.className = 'poke-item';
             div.innerHTML = `
@@ -143,9 +179,15 @@
                 <span><b>#${poke.numero}</b></span>
                 <span>${poke.nombre}</span>
                 <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type' style='color:${tipoColor(t)}'>${t}</span>`).join('')}</span>
+                <div style='font-size:0.8em;color:#7fffd4;margin-top:0.3rem;'>
+                    <div>Encuentros: ${stats.encuentros}</div>
+                    <div>Equipos: ${stats.equiposCount}</div>
+                    <div>Nivel prom: ${stats.promedioNivel}</div>
+                </div>
                 <span class='poke-actions'>
                     <button class='btn btn-sm btn-outline-warning' onclick='editPokeBase(${idx});'><i class='bi bi-pencil'></i></button>
                     <button class='btn btn-sm btn-outline-danger' onclick='delPokeBase(${idx});'><i class='bi bi-trash'></i></button>
+                    <button class='btn btn-sm ${poke.favorito ? 'btn-warning' : 'btn-outline-warning'}' onclick='toggleFavorito(${idx});'><i class='bi bi-star${poke.favorito ? '-fill' : ''}'></i></button>
                 </span>
             `;
             pokeList.appendChild(div);
@@ -179,6 +221,29 @@
     document.getElementById('searchBox').oninput = function() {
         renderPokemonesBase(this.value);
     };
+    function sincronizarCambiosPokemon(numero, nuevoNombre, nuevaImagen) {
+        // Sincronizar con shinys
+        const shinys = getShinys();
+        shinys.forEach(shiny => {
+            if (shiny.numero == numero) {
+                shiny.nombre = nuevoNombre;
+                shiny.imagen = nuevaImagen;
+            }
+        });
+        localStorage.setItem('pokes', JSON.stringify(shinys));
+        
+        // Sincronizar con equipos
+        const equipos = getEquipos();
+        equipos.forEach(equipo => {
+            equipo.pokes.forEach(poke => {
+                if (poke.numero == numero) {
+                    poke.nombre = nuevoNombre;
+                    poke.imagen = nuevaImagen;
+                }
+            });
+        });
+        localStorage.setItem('equipos', JSON.stringify(equipos));
+    }
     function agregarEditarPokeBase(idx) {
         const pokes = getPokemonesBase();
         let poke = idx !== undefined ? pokes[idx] : {imagen:'',numero:'',nivel:'',nombre:'',objeto:'',alfa:false,tipos:[]};
@@ -237,9 +302,16 @@
             }
         }).then(res => {
             if(res.isConfirmed) {
+                const numeroOriginal = idx !== undefined ? pokes[idx].numero : null;
                 if(idx!==undefined) pokes[idx] = res.value;
                 else pokes.push(res.value);
                 savePokemonesBase(pokes);
+                
+                // Sincronizar cambios si es edición
+                if(idx !== undefined && numeroOriginal) {
+                    sincronizarCambiosPokemon(numeroOriginal, res.value.nombre, res.value.imagen);
+                }
+                
                 renderPokemonesBase(document.getElementById('searchBox').value);
             }
         });
@@ -262,6 +334,12 @@
         };
         const tipo = select.value;
         select.style.color = colores[tipo] || '#fff';
+    }
+    function toggleFavorito(idx) {
+        const pokes = getPokemonesBase();
+        pokes[idx].favorito = !pokes[idx].favorito;
+        savePokemonesBase(pokes);
+        renderPokemonesBase(document.getElementById('searchBox').value);
     }
     // Inicializar
     renderPokemonesBase();

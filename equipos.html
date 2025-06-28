@@ -151,6 +151,22 @@
     }
     function renderEquipos() {
         const equipos = getEquipos();
+        const pokesBase = getPokemonesBase();
+        
+        // Sincronizar datos de equipos con CRUD base
+        equipos.forEach(equipo => {
+            equipo.pokes.forEach(poke => {
+                if (poke.numero) {
+                    const pokeBase = pokesBase.find(p => p.numero == poke.numero);
+                    if (pokeBase) {
+                        poke.nombre = pokeBase.nombre;
+                        poke.imagen = pokeBase.imagen;
+                        poke.tipos = pokeBase.tipos;
+                    }
+                }
+            });
+        });
+        
         const teamList = document.getElementById('teamList');
         teamList.innerHTML = '';
         equipos.forEach((equipo, idx) => {
@@ -212,6 +228,16 @@
         return JSON.parse(localStorage.getItem('pokemonesBase') || '[]');
     }
 
+    function sincronizarConBase(numero, nombre, imagen) {
+        const pokesBase = JSON.parse(localStorage.getItem('pokemonesBase') || '[]');
+        const pokeBase = pokesBase.find(p => p.numero == numero);
+        if (pokeBase) {
+            pokeBase.nombre = nombre;
+            pokeBase.imagen = imagen;
+            localStorage.setItem('pokemonesBase', JSON.stringify(pokesBase));
+        }
+    }
+
     function agregarEditarEquipo(idx) {
         const equipos = getEquipos();
         let equipo = idx !== undefined ? equipos[idx] : { pokes: [] };
@@ -221,7 +247,11 @@
             html += `
                 <div style='border-bottom:1px solid #444;margin-bottom:0.7rem;padding-bottom:0.7rem;'>
                     <h5>Pokémon ${i+1}</h5>
-                    <button type='button' class='btn btn-info btn-sm' style='margin-bottom:0.5rem' onclick='seleccionarPokemonBase(${i})'>Seleccionar de base</button><br>
+                    <button type='button' class='btn btn-info btn-sm' style='margin-bottom:0.5rem' onclick='mostrarPickerPokemon(${i})'>Seleccionar de base</button><br>
+                    <div id='picker-container-${i}' style='display:none;background:#111;border-radius:0.5rem;padding:0.5rem;margin-bottom:0.5rem;'>
+                        <input type='text' id='search-picker-${i}' class='swal2-input' placeholder='Buscar por nombre o número...' style='margin-bottom:0.5rem;'>
+                        <div id='picker-list-${i}' style='max-height:150px;overflow-y:auto;'></div>
+                    </div>
                     <input type='file' accept='image/*' id='poke-img-${i}' class='swal2-file'><br>
                     <img id='poke-preview-${i}' src='${pokes[i].imagen||''}' style='width:40px;${pokes[i].imagen?'display:inline-block':'display:none'};margin:0.3rem 0;'>
                     <input id='poke-numero-${i}' class='swal2-input' placeholder='N° Pokédex' type='number' value='${pokes[i].numero||''}'>
@@ -264,8 +294,6 @@
                     setSelectColor(sel2);
                     sel1.addEventListener('change', function(){ setSelectColor(sel1); });
                     sel2.addEventListener('change', function(){ setSelectColor(sel2); });
-                    // Conectar botón seleccionar de base
-                    window[`seleccionarPokemonBase${i}`] = () => seleccionarPokemonBase(i);
                 }
             },
             preConfirm: () => {
@@ -285,6 +313,11 @@
                         if(tipo1) tiposPoke.push(tipo1);
                         if(tipo2 && tipo2!==tipo1) tiposPoke.push(tipo2);
                         pokes.push({imagen,numero,nombre,nivel,objeto,alfa,tipos:tiposPoke});
+                        
+                        // Sincronizar con CRUD base si hay cambios
+                        if(numero && nombre && imagen) {
+                            sincronizarConBase(numero, nombre, imagen);
+                        }
                     }
                 }
                 if(pokes.length===0) {
@@ -303,52 +336,68 @@
         });
     }
 
-    // Selección de pokémon base para equipos
-    function seleccionarPokemonBase(idx) {
+    // Mostrar picker de pokemon base
+    function mostrarPickerPokemon(slot) {
         const pokesBase = getPokemonesBase();
-        let html = `<input type='text' id='searchBasePoke' class='swal2-input' placeholder='Buscar por nombre o número...'><div id='basePokeList' style='max-height:250px;overflow-y:auto;margin-top:0.5rem;'>`;
-        html += pokesBase.map((poke, i) => `
-            <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;' onclick='window.selectBasePoke(${idx},${i})'>
-                <img src='${poke.imagen}' style='width:32px;height:32px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
+        const container = document.getElementById(`picker-container-${slot}`);
+        const list = document.getElementById(`picker-list-${slot}`);
+        const search = document.getElementById(`search-picker-${slot}`);
+        
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            renderPickerList(slot, pokesBase);
+            
+            search.oninput = function() {
+                const val = this.value.toLowerCase();
+                const filtered = pokesBase.filter(p => 
+                    p.nombre.toLowerCase().includes(val) || 
+                    (p.numero+'').includes(val)
+                );
+                renderPickerList(slot, filtered);
+            };
+        } else {
+            container.style.display = 'none';
+        }
+    }
+    
+    function renderPickerList(slot, pokes) {
+        const list = document.getElementById(`picker-list-${slot}`);
+        list.innerHTML = pokes.map((poke, i) => `
+            <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;padding:0.3rem;border-radius:0.3rem;background:#222;' onclick='seleccionarPokeDelPicker(${slot},${i})'>
+                <img src='${poke.imagen}' style='width:32px;height:32px;object-fit:scale-down;background:#333;border-radius:0.5rem;'>
                 <span><b>#${poke.numero}</b></span>
                 <span>${poke.nombre}</span>
                 <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type' style='color:${tipoColor(t)}'>${t}</span>`).join('')}</span>
             </div>
-        `).join('')+`</div>`;
-        Swal.fire({
-            title: 'Seleccionar Pokémon base',
-            html,
-            background: '#181818',
-            color: '#fff',
-            width: 500,
-            showConfirmButton: false,
-            didOpen: () => {
-                document.getElementById('searchBasePoke').oninput = function() {
-                    const val = this.value.toLowerCase();
-                    const list = document.getElementById('basePokeList');
-                    list.innerHTML = pokesBase.filter(p=>p.nombre.toLowerCase().includes(val)||(p.numero+'').includes(val)).map((poke, i) => `
-                        <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;cursor:pointer;' onclick='window.selectBasePoke(${idx},${i})'>
-                            <img src='${poke.imagen}' style='width:32px;height:32px;object-fit:scale-down;background:#222;border-radius:0.5rem;'>
-                            <span><b>#${poke.numero}</b></span>
-                            <span>${poke.nombre}</span>
-                            <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type' style='color:${tipoColor(t)}'>${t}</span>`).join('')}</span>
-                        </div>
-                    `).join('');
-                };
-            }
-        });
-        window.selectBasePoke = (slot, baseIdx) => {
-            const poke = pokesBase[baseIdx];
-            document.getElementById(`poke-preview-${slot}`).src = poke.imagen;
-            document.getElementById(`poke-preview-${slot}`).style.display = 'inline-block';
-            document.getElementById(`poke-numero-${slot}`).value = poke.numero;
-            document.getElementById(`poke-nombre-${slot}`).value = poke.nombre;
-            document.getElementById(`poke-tipo1-${slot}`).value = poke.tipos[0]||'';
-            document.getElementById(`poke-tipo2-${slot}`).value = poke.tipos[1]||'';
-            setSelectColor(document.getElementById(`poke-tipo1-${slot}`));
-            setSelectColor(document.getElementById(`poke-tipo2-${slot}`));
-            Swal.close();
-        };
+        `).join('');
+    }
+    
+    function seleccionarPokeDelPicker(slot, baseIdx) {
+        const pokesBase = getPokemonesBase();
+        const poke = pokesBase[baseIdx];
+        const preview = document.getElementById(`poke-preview-${slot}`);
+        const numero = document.getElementById(`poke-numero-${slot}`);
+        const nombre = document.getElementById(`poke-nombre-${slot}`);
+        const tipo1 = document.getElementById(`poke-tipo1-${slot}`);
+        const tipo2 = document.getElementById(`poke-tipo2-${slot}`);
+        
+        if (preview) {
+            preview.src = poke.imagen;
+            preview.style.display = 'inline-block';
+        }
+        if (numero) numero.value = poke.numero;
+        if (nombre) nombre.value = poke.nombre;
+        if (tipo1) {
+            tipo1.value = poke.tipos[0]||'';
+            setSelectColor(tipo1);
+        }
+        if (tipo2) {
+            tipo2.value = poke.tipos[1]||'';
+            setSelectColor(tipo2);
+        }
+        
+        // Ocultar el picker
+        document.getElementById(`picker-container-${slot}`).style.display = 'none';
     }
 
     function mostrarCoberturaEquipo(equipo) {
