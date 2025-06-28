@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonTally</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <script src="js/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            min-height: 100vh;
+            min-width: 100vw;
+            background: url('a.gif') center center/cover no-repeat fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tally-container {
+            background: rgba(0,0,0,0.95);
+            border-radius: 2rem;
+            box-shadow: 0 0 32px #000a;
+            padding: 2rem 2.5rem;
+            width: 480px;
+            max-width: 98vw;
+            color: #fff;
+            text-align: left;
+        }
+        .tally-title {
+            text-align: center;
+            font-weight: bold;
+            color: #7fffd4;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+        .add-btn {
+            background: #222;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 0.5rem;
+            font-size: 1.2rem;
+            transition: background 0.2s;
+        }
+        .add-btn:hover {
+            background: #444;
+        }
+        .poke-list {
+            margin-top: 1.5rem;
+        }
+        .poke-item {
+            display: flex;
+            align-items: center;
+            background: #181818;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            gap: 0.7rem;
+        }
+        .poke-img {
+            width: 70px;
+            height: 70px;
+            object-fit: scale-down;
+            background: #222;
+            border-radius: 1rem;
+            padding: 2px;
+        }
+        .poke-actions button {
+            margin-left: 0.3rem;
+        }
+        .prob-box {
+            margin-top: 1.5rem;
+            background: #111;
+            border-radius: 1rem;
+            padding: 1rem;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="tally-container">
+        <div class="tally-title">Shiny hunter V2<i class="bi bi-star"></i>
+            <button class="add-btn" id="addPokeBtn" title="Agregar Pokémon"><i class="bi bi-plus"></i></button>
+        </div>
+        <div id="pokeList" class="poke-list"></div>
+        <div id="probBox" class="prob-box"></div>
+        <div style="margin-top:1.5rem; text-align:center;">
+            <button id="toggleProbBtn" class="btn btn-secondary" style="margin-bottom:0.7rem;">Cambiar a modo Pokémon Vanilla</button><br>
+            <button id="infoBtn" class="btn btn-info">ℹ️ Información</button>
+            <div id="probMode" style="margin-top:0.5rem; color:#7fffd4; font-weight:bold;">Modo actual: PokeMMO (1 entre 30,000)</div>
+        </div>
+    </div>
+    <script>
+        // Utilidades
+        function getPokes() {
+            return JSON.parse(localStorage.getItem('pokes') || '[]');
+        }
+        function savePokes(pokes) {
+            localStorage.setItem('pokes', JSON.stringify(pokes));
+        }
+        let shinyBase = 30000;
+        let shinyMode = 'pokemmo'; // 'pokemmo' o 'vanilla'
+        function calcShinyProb(encuentros) {
+            let shinyProb = 1 - Math.pow(1 - 1/shinyBase, encuentros);
+            return shinyProb;
+        }
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        function renderPokes() {
+            const pokes = getPokes().sort((a, b) => a.numero - b.numero);
+            const pokeList = document.getElementById('pokeList');
+            pokeList.innerHTML = '';
+            let totalEncuentros = 0;
+            pokes.forEach((poke, idx) => {
+                totalEncuentros += Number(poke.encuentros);
+                const prob = calcShinyProb(poke.encuentros);
+                const item = document.createElement('div');
+                item.className = 'poke-item';
+                item.innerHTML = `
+                    <span><b>#${poke.numero}</b></span>
+                    <img src="${poke.imagen}" class="poke-img" alt="${poke.nombre}">
+                    <span style="min-width:80px">${poke.nombre}</span>
+                    <span style="color:#7fffd4;font-size:0.95em;">Shiny: ${(prob*100).toFixed(4)}%</span>
+                    <span>Encuentros: <b>${poke.encuentros}</b></span>
+                    <span class="poke-actions">
+                        <button class="btn btn-sm btn-outline-success" onclick="sumEncuentros(${idx},1)">+1</button>
+                        <button class="btn btn-sm btn-outline-success" onclick="sumEncuentros(${idx},2)">+2</button>
+                        <button class="btn btn-sm btn-outline-success" onclick="sumEncuentros(${idx},3)">+3</button>
+                        <button class="btn btn-sm btn-outline-success" onclick="sumEncuentros(${idx},5)">+5</button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="editPoke(${idx})"><i class='bi bi-pencil'></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="delPoke(${idx})"><i class='bi bi-trash'></i></button>
+                    </span>
+                `;
+                item.onclick = (e) => {
+                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'I') return;
+                    showPokeStats(poke);
+                };
+                pokeList.appendChild(item);
+            });
+            renderProbBox(totalEncuentros);
+        }
+        function renderProbBox(totalEncuentros) {
+            const prob = calcShinyProb(totalEncuentros);
+            const probBox = document.getElementById('probBox');
+            let modo = shinyMode === 'pokemmo' ? 'PokeMMO (1 entre 30,000)' : 'Pokémon Vanilla (1 entre 4,096)';
+            probBox.innerHTML = `
+                <b>Probabilidad de haber visto al menos un shiny:</b> ${(prob*100).toFixed(4)}%<br>
+                <b>Probabilidad de no haber visto ninguno:</b> ${((1-prob)*100).toFixed(4)}%<br>
+                <b>Total de encuentros:</b> ${totalEncuentros}<br>
+                <span style='color:#7fffd4;font-size:0.95em;'>Modo actual: ${modo}</span>
+            `;
+        }
+        function sumEncuentros(idx, n) {
+            const pokes = getPokes();
+            pokes[idx].encuentros = Number(pokes[idx].encuentros) + n;
+            savePokes(pokes);
+            renderPokes();
+        }
+        function delPoke(idx) {
+            const pokes = getPokes();
+            Swal.fire({
+                title: '¿Eliminar Pokémon?',
+                text: `Esta acción no se puede deshacer.`,
+                background: '#181818',
+                color: '#fff',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#222'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    pokes.splice(idx, 1);
+                    savePokes(pokes);
+                    renderPokes();
+                }
+            });
+        }
+        function editPoke(idx) {
+            const pokes = getPokes();
+            const poke = pokes[idx];
+            Swal.fire({
+                title: 'Editar Pokémon',
+                html: `
+                    <h1>Nombre</h1>
+                    <input id='swal-nombre' class='swal2-input' placeholder='Nombre' value='${poke.nombre}'>
+                    <h1>Imagen</h1>
+                    <input id='swal-imagen' class='swal2-file' type='file' accept='image/*'>
+                    <img id='swal-preview' src='${poke.imagen}' style='width:40px;display:block;margin:0.5rem auto;'>
+                    <h1>N° Pokédex</h1>
+                    <input id='swal-numero' class='swal2-input' placeholder='N° Pokédex' type='number' value='${poke.numero}'>
+                    <h1>Encuentros</h1>
+                    <input id='swal-encuentros' class='swal2-input' placeholder='Encuentros' type='number' value='${poke.encuentros}'>`,
+                background: '#181818',
+                color: '#fff',
+                confirmButtonText: 'Guardar',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    document.getElementById('swal-imagen').addEventListener('change', function(e) {
+                        if (e.target.files && e.target.files[0]) {
+                            fileToBase64(e.target.files[0]).then(base64 => {
+                                document.getElementById('swal-preview').src = base64;
+                            });
+                        }
+                    });
+                },
+                preConfirm: async () => {
+                    let imagen = poke.imagen;
+                    const fileInput = document.getElementById('swal-imagen');
+                    if (fileInput.files && fileInput.files[0]) {
+                        imagen = await fileToBase64(fileInput.files[0]);
+                    } else {
+                        imagen = document.getElementById('swal-preview').src;
+                    }
+                    return {
+                        nombre: document.getElementById('swal-nombre').value,
+                        imagen: imagen,
+                        numero: Number(document.getElementById('swal-numero').value),
+                        encuentros: Number(document.getElementById('swal-encuentros').value)
+                    };
+                }
+            }).then(res => {
+                if (res.isConfirmed) {
+                    pokes[idx] = res.value;
+                    savePokes(pokes);
+                    renderPokes();
+                }
+            });
+        }
+        function showPokeStats(poke) {
+            const prob = calcShinyProb(poke.encuentros);
+            const notProb = 1 - prob;
+            let modo = shinyMode === 'pokemmo' ? 'PokeMMO (1 entre 30,000)' : 'Pokémon Vanilla (1 entre 4,096)';
+            Swal.fire({
+                title: `${poke.nombre} (#${poke.numero})`,
+                html: `<canvas id='pokeChart' width='180' height='180'></canvas><br>
+                       <b>Encuentros:</b> ${poke.encuentros}<br>
+                       <b>Prob. al menos 1 shiny:</b> ${(prob*100).toFixed(4)}%<br>
+                       <b>Prob. ningún shiny:</b> ${(notProb*100).toFixed(4)}%<br>
+                       <span style='color:#7fffd4;font-size:0.95em;'>Modo actual: ${modo}</span>`,
+                background: '#181818',
+                color: '#fff',
+                didOpen: () => {
+                    const ctx = document.getElementById('pokeChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Shiny', 'No shiny'],
+                            datasets: [{
+                                data: [prob, notProb],
+                                backgroundColor: ['#ffb6e6', '#222'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            cutout: '70%',
+                            plugins: {
+                                legend: {display: false},
+                                tooltip: {enabled: false}
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        document.getElementById('addPokeBtn').onclick = () => {
+            Swal.fire({
+                title: 'Agregar Pokémon',
+                html: `
+                    <h1>Nombre</h1>
+                    <input id='swal-nombre' class='swal2-input' placeholder='Nombre'>
+                    <h1>Imagen</h1>
+                    <input id='swal-imagen' class='swal2-file' type='file' accept='image/*'>
+                    <img id='swal-preview' style='width:40px;display:none;margin:0.5rem auto;'>
+                    <h1>N° Pokédex</h1>
+                    <input id='swal-numero' class='swal2-input' placeholder='N° Pokédex' type='number'>
+                    <h1>Encuentros</h1>
+                    <input id='swal-encuentros' class='swal2-input' placeholder='Encuentros' type='number' value='1'>`,
+                background: '#181818',
+                color: '#fff',
+                confirmButtonText: 'Agregar',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    document.getElementById('swal-imagen').addEventListener('change', function(e) {
+                        if (e.target.files && e.target.files[0]) {
+                            fileToBase64(e.target.files[0]).then(base64 => {
+                                const preview = document.getElementById('swal-preview');
+                                preview.src = base64;
+                                preview.style.display = 'block';
+                            });
+                        }
+                    });
+                },
+                preConfirm: async () => {
+                    let imagen = '';
+                    const fileInput = document.getElementById('swal-imagen');
+                    if (fileInput.files && fileInput.files[0]) {
+                        imagen = await fileToBase64(fileInput.files[0]);
+                    } else {
+                        imagen = document.getElementById('swal-preview').src;
+                    }
+                    return {
+                        nombre: document.getElementById('swal-nombre').value,
+                        imagen: imagen,
+                        numero: Number(document.getElementById('swal-numero').value),
+                        encuentros: Number(document.getElementById('swal-encuentros').value)
+                    };
+                }
+            }).then(res => {
+                if (res.isConfirmed) {
+                    const pokes = getPokes();
+                    pokes.push(res.value);
+                    savePokes(pokes);
+                    renderPokes();
+                }
+            });
+        };
+        document.getElementById('infoBtn').onclick = () => {
+            Swal.fire({
+                title: 'Información de probabilidades',
+                html: `Las probabilidades son calculadas en base al sistema de shinys de <b>POKEMMO</b> (1 entre 30,000).<br><br>Puede cambiar los cálculos por los de los juegos originales presionando el botón de abajo (<b>1 entre 4,096</b>).<br><br><a href='https://sprites.pmdcollab.org' target='_blank' style='color:#7fffd4;text-decoration:underline;font-weight:bold;'>Aquí puedes encontrar fácilmente los sprites de los pokemons</a>`,
+                background: '#181818',
+                color: '#fff',
+                confirmButtonText: 'Entendido',
+            });
+        };
+        document.getElementById('toggleProbBtn').onclick = () => {
+            if (shinyMode === 'pokemmo') {
+                shinyBase = 4096;
+                shinyMode = 'vanilla';
+                document.getElementById('toggleProbBtn').innerText = 'Cambiar a modo PokeMMO';
+                document.getElementById('probMode').innerText = 'Modo actual: Pokémon Vanilla (1 entre 4,096)';
+            } else {
+                shinyBase = 30000;
+                shinyMode = 'pokemmo';
+                document.getElementById('toggleProbBtn').innerText = 'Cambiar a modo Pokémon Vanilla';
+                document.getElementById('probMode').innerText = 'Modo actual: PokeMMO (1 entre 30,000)';
+            }
+            renderPokes();
+        };
+        // Inicializar
+        renderPokes();
+    </script>
+</body>
+</html>
