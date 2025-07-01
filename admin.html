@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Pokémon Dashboard</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
+    <script src="js/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --gradient-angle: 45deg;
+        }
+        @keyframes animateGradient {
+            0% { --gradient-angle: 0deg; }
+            100% { --gradient-angle: 360deg; }
+        }
+        body {
+            min-height: 100vh;
+            min-width: 100vw;
+            background: url('a.gif') center center/cover no-repeat fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .admin-container {
+            border: 4px solid;
+            border-image: linear-gradient(var(--gradient-angle, 45deg), #00bfff, #87ceeb, #00bfff, #87ceeb) 1;
+            animation: animateGradient 6s linear infinite;
+            background: rgba(0,0,0,0.95);
+            border-radius: 2rem;
+            box-shadow: 0 0 32px #000a;
+            padding: 2rem 2.5rem;
+            width: 1200px;
+            max-width: 98vw;
+            color: #fff;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.3s;
+        }
+        .admin-container::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            background: linear-gradient(45deg, #00bfff, #87ceeb, #00bfff, #87ceeb);
+            background-size: 400% 400%;
+            border-radius: 2rem;
+            z-index: -1;
+            animation: rotateGradient 3s ease infinite;
+        }
+        @keyframes rotateGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .admin-title {
+            text-align: center;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+        .nav-tabs {
+            border-bottom: 1px solid #444;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-tabs::before {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e, #ffd700, #ffed4e);
+            background-size: 400% 100%;
+            animation: rotateGradient 4s ease infinite;
+        }
+        .nav-tabs .nav-link {
+            color: #ffd700;
+            border: none;
+            background: transparent;
+            margin-right: 0.5rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            padding: 0.5rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-tabs .nav-link::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e, #ffd700, #ffed4e);
+            background-size: 400% 400%;
+            border-radius: 0.5rem 0.5rem 0 0;
+            z-index: -1;
+            animation: rotateGradient 3s ease infinite;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .nav-tabs .nav-link:hover::before {
+            opacity: 0.3;
+        }
+        .nav-tabs .nav-link.active {
+            background: #ffd700;
+            color: #000;
+            font-weight: bold;
+        }
+        .nav-tabs .nav-link.active::before {
+            opacity: 0.5;
+        }
+        .tab-content {
+            min-height: 500px;
+        }
+        .user-item, .poke-item {
+            border: 3px solid;
+            border-image: linear-gradient(45deg, #ffd700, #ffed4e, #ffd700, #ffed4e) 1;
+            display: flex;
+            align-items: center;
+            background: #181818;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            gap: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .user-item::before, .poke-item::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e, #ffd700, #ffed4e);
+            background-size: 400% 400%;
+            border-radius: 1rem;
+            z-index: -1;
+            animation: rotateGradient 4s ease infinite;
+        }
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            background: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #ffd700;
+        }
+        .poke-img {
+            width: 50px;
+            height: 50px;
+            object-fit: scale-down;
+            background: #222;
+            border-radius: 1rem;
+            padding: 2px;
+        }
+        .admin-badge {
+            background: #ffd700;
+            color: #000;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        .btn-admin {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-admin:hover {
+            background: #ffed4e;
+            transform: translateY(-2px);
+        }
+        .btn-danger-admin {
+            background: #dc3545;
+            color: #fff;
+        }
+        .btn-danger-admin:hover {
+            background: #c82333;
+        }
+        .btn-success-admin {
+            background: #28a745;
+            color: #fff;
+        }
+        .btn-success-admin:hover {
+            background: #218838;
+        }
+        .search-box {
+            border: 2px solid;
+            border-image: linear-gradient(45deg, #ffd700, #ffed4e, #ffd700, #ffed4e) 1;
+            margin-bottom: 1rem;
+            width: 100%;
+            background: rgba(17,17,17,0.85);
+            color: #fff;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .search-box::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e, #ffd700, #ffed4e);
+            background-size: 400% 400%;
+            border-radius: 0.5rem;
+            z-index: -1;
+            animation: rotateGradient 6s ease infinite;
+        }
+        .stats-card {
+            background: #181818;
+            border: 3px solid;
+            border-image: linear-gradient(45deg, #ffd700, #ffed4e, #ffd700, #ffed4e) 1;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .stats-number {
+            font-size: 2.5rem;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .stats-label {
+            color: #ccc;
+            font-size: 1rem;
+        }
+        .hisessrin-logo {
+            position: fixed;
+            left: 2rem;
+            bottom: 2rem;
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            border-radius: 1rem;
+            box-shadow: 0 4px 16px #000a;
+            background: #181818cc;
+            border: 3px solid #ffd700;
+            z-index: 1001;
+            transition: transform 0.2s;
+            pointer-events: none;
+            opacity: 0.95;
+        }
+        .hisessrin-logo:hover {
+            transform: scale(1.07) rotate(-3deg);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Logo HISESSRIN en esquina inferior izquierda -->
+    <img src="img/HISESSRIN.png" alt="Logo HISESSRIN" class="hisessrin-logo">
+
+    <div class="admin-container">
+        <div style="position: absolute; top: 1.5rem; left: 2rem; z-index: 10;">
+            <button class="btn btn-outline-warning btn-sm" onclick="window.location.href='index.html'">
+                <i class="bi bi-house"></i> Inicio
+            </button>
+        </div>
+        <div class="admin-title">
+            <i class="bi bi-shield-check"></i> Panel de Administración
+            <div style="position: absolute; top: 1rem; right: 1rem; font-size: 0.9rem; color: #ffd700;">
+                <span id="currentAdminDisplay"></span>
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()" style="margin-left: 0.5rem;">
+                    <i class="bi bi-box-arrow-left"></i> Salir
+                </button>
+            </div>
+        </div>
+        
+        <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">
+                    <i class="bi bi-people"></i> Gestión de Usuarios
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pokemones-tab" data-bs-toggle="tab" data-bs-target="#pokemones" type="button" role="tab">
+                    <i class="bi bi-collection"></i> Pokémon Globales
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="adminTabContent">
+            <!-- Tab Dashboard -->
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                <h5 style="color: #ffd700; margin-bottom: 1.5rem;">
+                    <i class="bi bi-graph-up"></i> Estadísticas del Sistema
+                </h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <div class="stats-number" id="totalUsers">0</div>
+                            <div class="stats-label">Usuarios Totales</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <div class="stats-number" id="totalAdmins">0</div>
+                            <div class="stats-label">Administradores</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <div class="stats-number" id="totalPokemonesGlobales">0</div>
+                            <div class="stats-label">Pokémon Globales</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <div class="stats-number" id="totalShinys">0</div>
+                            <div class="stats-label">Shinys Totales</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="stats-card">
+                            <h6 style="color: #ffd700;">Usuarios Activos</h6>
+                            <div id="activeUsersList"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stats-card">
+                            <h6 style="color: #ffd700;">Acciones Recientes</h6>
+                            <div id="recentActions"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Gestión de Usuarios -->
+            <div class="tab-pane fade" id="users" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 style="color: #ffd700;">Gestión de Usuarios</h5>
+                    <input type="text" id="userSearchBox" class="search-box" placeholder="Buscar usuarios..." style="width: 300px;">
+                </div>
+                <div id="usersList"></div>
+            </div>
+            
+            <!-- Tab Pokémon Globales -->
+            <div class="tab-pane fade" id="pokemones" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 style="color: #ffd700;">Pokémon Globales</h5>
+                    <button class="btn btn-admin" id="addGlobalPokeBtn">
+                        <i class="bi bi-plus"></i> Agregar Pokémon Global
+                    </button>
+                </div>
+                <input type="text" id="pokeSearchBox" class="search-box" placeholder="Buscar Pokémon globales...">
+                <div id="globalPokeList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script>
+        // --- GLOBAL ---
+        function setSelectColor(select) {
+            const tipo = select.value;
+            select.style.color = tipo ? '#000' : '#fff';
+        }
+        // --- FIN GLOBAL ---
+        // Sistema de administración
+        let currentAdmin = null;
+        let users = [];
+        let pokemonesGlobales = [];
+        
+        // Verificar autenticación de admin
+        function checkAdminAuth() {
+            const loggedInUser = localStorage.getItem('currentUser');
+            if (!loggedInUser) {
+                Swal.fire({
+                    title: 'Acceso denegado',
+                    text: 'Debes iniciar sesión para acceder al panel de administración',
+                    icon: 'warning',
+                    background: '#181818',
+                    color: '#fff',
+                    confirmButtonText: 'Ir al inicio',
+                    confirmButtonColor: '#ffd700'
+                }).then(() => {
+                    window.location.href = 'index.html';
+                });
+                return false;
+            }
+            
+            currentAdmin = JSON.parse(loggedInUser);
+            if (!currentAdmin.isAdmin) {
+                Swal.fire({
+                    title: 'Acceso denegado',
+                    text: 'Solo los administradores pueden acceder a este panel',
+                    icon: 'error',
+                    background: '#181818',
+                    color: '#fff',
+                    confirmButtonText: 'Ir al dashboard',
+                    confirmButtonColor: '#ffd700'
+                }).then(() => {
+                    window.location.href = 'lobby.html';
+                });
+                return false;
+            }
+            
+            document.getElementById('currentAdminDisplay').textContent = `Admin: ${currentAdmin.username}`;
+            return true;
+        }
+        
+        // Cargar datos
+        function loadData() {
+            users = JSON.parse(localStorage.getItem('users') || '[]');
+            pokemonesGlobales = JSON.parse(localStorage.getItem('pokemonesGlobales') || '[]');
+        }
+        
+        // Actualizar estadísticas del dashboard
+        function updateDashboardStats() {
+            const totalUsers = users.length;
+            const totalAdmins = users.filter(u => u.isAdmin).length;
+            const totalPokemonesGlobales = pokemonesGlobales.length;
+            
+            // Calcular total de shinys
+            let totalShinys = 0;
+            users.forEach(user => {
+                const userShinys = JSON.parse(localStorage.getItem(`shinys_${user.username}`) || '[]');
+                totalShinys += userShinys.length;
+            });
+            
+            document.getElementById('totalUsers').textContent = totalUsers;
+            document.getElementById('totalAdmins').textContent = totalAdmins;
+            document.getElementById('totalPokemonesGlobales').textContent = totalPokemonesGlobales;
+            document.getElementById('totalShinys').textContent = totalShinys;
+            
+            // Mostrar usuarios activos
+            const activeUsersList = document.getElementById('activeUsersList');
+            activeUsersList.innerHTML = users.slice(0, 5).map(user => 
+                `<div style="margin-bottom: 0.5rem; padding: 0.5rem; background: #222; border-radius: 0.5rem;">
+                    <i class="bi bi-person"></i> ${user.username}
+                    ${user.isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}
+                </div>`
+            ).join('');
+            
+            // Mostrar acciones recientes
+            const recentActions = document.getElementById('recentActions');
+            recentActions.innerHTML = `
+                <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: #222; border-radius: 0.5rem;">
+                    <i class="bi bi-clock"></i> Panel de administración accedido
+                </div>
+                <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: #222; border-radius: 0.5rem;">
+                    <i class="bi bi-people"></i> ${totalUsers} usuarios registrados
+                </div>
+                <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: #222; border-radius: 0.5rem;">
+                    <i class="bi bi-collection"></i> ${totalPokemonesGlobales} Pokémon globales
+                </div>
+            `;
+        }
+        
+        // Renderizar lista de usuarios
+        function renderUsers() {
+            const usersList = document.getElementById('usersList');
+            const searchTerm = document.getElementById('userSearchBox').value.toLowerCase();
+            
+            const filteredUsers = users.filter(user => 
+                user.username.toLowerCase().includes(searchTerm)
+            );
+            
+            usersList.innerHTML = filteredUsers.map(user => `
+                <div class="user-item">
+                    <div class="user-avatar">
+                        <i class="bi bi-person"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; color: #ffd700;">
+                            ${user.username}
+                            ${user.isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}
+                        </div>
+                        <div style="color: #ccc; font-size: 0.9rem;">
+                            ${user.isAdmin ? 'Administrador' : 'Usuario'}
+                        </div>
+                    </div>
+                    <div>
+                        ${!user.isAdmin ? 
+                            `<button class="btn btn-success-admin btn-sm" onclick="makeAdmin('${user.username}')">
+                                <i class="bi bi-shield-check"></i> Hacer Admin
+                            </button>` : 
+                            `<button class="btn btn-warning btn-sm" onclick="removeAdmin('${user.username}')">
+                                <i class="bi bi-shield-x"></i> Quitar Admin
+                            </button>`
+                        }
+                        <button class="btn btn-danger-admin btn-sm" onclick="deleteUser('${user.username}')">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Renderizar lista de Pokémon globales
+        function renderGlobalPokemones() {
+            const globalPokeList = document.getElementById('globalPokeList');
+            const searchTerm = document.getElementById('pokeSearchBox').value.toLowerCase();
+            
+            const filteredPokemones = pokemonesGlobales.filter(poke => 
+                poke.nombre.toLowerCase().includes(searchTerm) || 
+                poke.numero.toString().includes(searchTerm)
+            );
+            
+            globalPokeList.innerHTML = filteredPokemones.map(poke => `
+                <div class="poke-item">
+                    <img src="${poke.imagen}" alt="${poke.nombre}" class="poke-img">
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; color: #ffd700;">
+                            #${poke.numero} - ${poke.nombre}
+                        </div>
+                        <div style="color: #ccc; font-size: 0.9rem;">
+                            Tipos: ${poke.tipos.join(', ')}
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-admin btn-sm" onclick="editGlobalPoke('${poke.numero}')">
+                            <i class="bi bi-pencil"></i> Editar
+                        </button>
+                        <button class="btn btn-danger-admin btn-sm" onclick="deleteGlobalPoke('${poke.numero}')">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Funciones de gestión de usuarios
+        function makeAdmin(username) {
+            Swal.fire({
+                title: '¿Hacer administrador?',
+                text: `¿Estás seguro de que quieres hacer administrador a ${username}?`,
+                icon: 'question',
+                background: '#181818',
+                color: '#fff',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, hacer admin',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const user = users.find(u => u.username === username);
+                    if (user) {
+                        user.isAdmin = true;
+                        localStorage.setItem('users', JSON.stringify(users));
+                        renderUsers();
+                        updateDashboardStats();
+                        
+                        Swal.fire({
+                            title: '¡Hecho!',
+                            text: `${username} ahora es administrador`,
+                            icon: 'success',
+                            background: '#181818',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                    }
+                }
+            });
+        }
+        
+        function removeAdmin(username) {
+            Swal.fire({
+                title: '¿Quitar administrador?',
+                text: `¿Estás seguro de que quieres quitar los privilegios de administrador a ${username}?`,
+                icon: 'warning',
+                background: '#181818',
+                color: '#fff',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, quitar admin',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const user = users.find(u => u.username === username);
+                    if (user) {
+                        user.isAdmin = false;
+                        localStorage.setItem('users', JSON.stringify(users));
+                        renderUsers();
+                        updateDashboardStats();
+                        
+                        Swal.fire({
+                            title: '¡Hecho!',
+                            text: `Se han quitado los privilegios de administrador a ${username}`,
+                            icon: 'success',
+                            background: '#181818',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                    }
+                }
+            });
+        }
+        
+        function deleteUser(username) {
+            Swal.fire({
+                title: '¿Eliminar usuario?',
+                text: `¿Estás seguro de que quieres eliminar al usuario ${username}? Esta acción no se puede deshacer.`,
+                icon: 'error',
+                background: '#181818',
+                color: '#fff',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    users = users.filter(u => u.username !== username);
+                    localStorage.setItem('users', JSON.stringify(users));
+                    
+                    // Eliminar datos del usuario
+                    localStorage.removeItem(`shinys_${username}`);
+                    localStorage.removeItem(`equipos_${username}`);
+                    localStorage.removeItem(`pokemonesBase_${username}`);
+                    localStorage.removeItem(`sitios_${username}`);
+                    
+                    renderUsers();
+                    updateDashboardStats();
+                    
+                    Swal.fire({
+                        title: '¡Usuario eliminado!',
+                        text: `El usuario ${username} ha sido eliminado del sistema`,
+                        icon: 'success',
+                        background: '#181818',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                }
+            });
+        }
+        
+        // Función para establecer colores en selects de tipos
+        function setSelectColor(select) {
+            const colores = {
+                Normal: '#A8A77A', Fuego: '#EE8130', Agua: '#6390F0', Planta: '#7AC74C', Eléctrico: '#F7D02C',
+                Hielo: '#96D9D6', Lucha: '#C22E28', Veneno: '#A33EA1', Tierra: '#E2BF65', Volador: '#A98FF3',
+                Psíquico: '#F95587', Bicho: '#A6B91A', Roca: '#B6A136', Fantasma: '#735797', Dragón: '#6F35FC',
+                Siniestro: '#705746', Acero: '#B7B7CE', Hada: '#D685AD'
+            };
+            const tipo = select.value;
+            select.style.color = colores[tipo] || '#fff';
+        }
+        
+        // Función de sincronización para Pokémon globales
+        function sincronizarCambiosPokemonGlobal(numero, nuevoNombre, nuevaImagen, nuevosTipos) {
+            // Obtener todos los usuarios
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            
+            users.forEach(user => {
+                // Sincronizar con shinys del usuario
+                const shinys = JSON.parse(localStorage.getItem(`shinys_${user.username}`) || '[]');
+                shinys.forEach(shiny => {
+                    if (shiny.numero == numero) {
+                        shiny.nombre = nuevoNombre;
+                        shiny.imagen = nuevaImagen;
+                    }
+                });
+                localStorage.setItem(`shinys_${user.username}`, JSON.stringify(shinys));
+                
+                // Sincronizar con equipos del usuario
+                const equipos = JSON.parse(localStorage.getItem(`equipos_${user.username}`) || '[]');
+                equipos.forEach(equipo => {
+                    equipo.pokes.forEach(poke => {
+                        if (poke.numero == numero) {
+                            poke.nombre = nuevoNombre;
+                            poke.imagen = nuevaImagen;
+                            poke.tipos = nuevosTipos;
+                        }
+                    });
+                });
+                localStorage.setItem(`equipos_${user.username}`, JSON.stringify(equipos));
+                
+                // Sincronizar con sitios de encuentro del usuario
+                const sitios = JSON.parse(localStorage.getItem(`sitios_${user.username}`) || '[]');
+                sitios.forEach(sitio => {
+                    sitio.pokemones.forEach(poke => {
+                        if (poke.numero == numero) {
+                            poke.nombre = nuevoNombre;
+                            poke.imagen = nuevaImagen;
+                            poke.tipos = nuevosTipos;
+                        }
+                    });
+                });
+                localStorage.setItem(`sitios_${user.username}`, JSON.stringify(sitios));
+            });
+        }
+        
+        // Funciones de gestión de Pokémon globales
+        function addGlobalPoke() {
+            const tipos = [
+                "Normal","Fuego","Agua","Planta","Eléctrico","Hielo","Lucha","Veneno","Tierra","Volador","Psíquico","Bicho","Roca","Fantasma","Dragón","Siniestro","Acero","Hada"
+            ];
+            
+            function fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+            
+            Swal.fire({
+                title: 'Agregar Pokémon Global',
+                html: `
+                    <h1>N° Pokédex</h1>
+                    <input id='swal-numero' class='swal2-input' placeholder='N° Pokédex' type='number'>
+                    <h1>Nombre</h1>
+                    <input id='swal-nombre' class='swal2-input' placeholder='Nombre'>
+                    <h1>Imagen</h1>
+                    <input id='swal-imagen' class='swal2-file' type='file' accept='image/*'>
+                    <img id='swal-preview' style='width:40px;display:none;margin:0.5rem auto;'>
+                    <h1>Tipo 1</h1>
+                    <select id='swal-tipo1' class='swal2-select' onchange='setSelectColor(this)'>
+                        <option value=''>Seleccionar tipo</option>
+                        ${tipos.map(t => `<option value='${t}'>${t}</option>`).join('')}
+                    </select>
+                    <h1>Tipo 2</h1>
+                    <select id='swal-tipo2' class='swal2-select' onchange='setSelectColor(this)'>
+                        <option value=''>Sin segundo tipo</option>
+                        ${tipos.map(t => `<option value='${t}'>${t}</option>`).join('')}
+                    </select>`,
+                background: '#181818',
+                color: '#fff',
+                confirmButtonText: 'Guardar',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    document.getElementById('swal-imagen').addEventListener('change', function(e) {
+                        if (e.target.files && e.target.files[0]) {
+                            fileToBase64(e.target.files[0]).then(base64 => {
+                                document.getElementById('swal-preview').src = base64;
+                                document.getElementById('swal-preview').style.display = 'block';
+                            });
+                        }
+                    });
+                    setSelectColor(document.getElementById('swal-tipo1'));
+                    setSelectColor(document.getElementById('swal-tipo2'));
+                },
+                preConfirm: async () => {
+                    let imagen = '';
+                    const fileInput = document.getElementById('swal-imagen');
+                    if (fileInput.files && fileInput.files[0]) {
+                        imagen = await fileToBase64(fileInput.files[0]);
+                    } else {
+                        imagen = document.getElementById('swal-preview').src;
+                    }
+                    
+                    const tipo1 = document.getElementById('swal-tipo1').value;
+                    const tipo2 = document.getElementById('swal-tipo2').value;
+                    const tipos = [tipo1];
+                    if (tipo2) tipos.push(tipo2);
+                    
+                    const numero = Number(document.getElementById('swal-numero').value);
+                    const nombre = document.getElementById('swal-nombre').value;
+                    
+                    if (!numero || !nombre || !imagen || tipos.length === 0 || !tipos[0]) {
+                        Swal.showValidationMessage('Todos los campos son requeridos');
+                        return false;
+                    }
+                    
+                    if (pokemonesGlobales.find(p => p.numero == numero)) {
+                        Swal.showValidationMessage('Ya existe un Pokémon con ese número');
+                        return false;
+                    }
+                    
+                    return {
+                        numero: numero,
+                        nombre: nombre,
+                        imagen: imagen,
+                        tipos: tipos
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const newPoke = result.value;
+                    pokemonesGlobales.push(newPoke);
+                    pokemonesGlobales.sort((a, b) => a.numero - b.numero);
+                    localStorage.setItem('pokemonesGlobales', JSON.stringify(pokemonesGlobales));
+                    
+                    renderGlobalPokemones();
+                    updateDashboardStats();
+                    
+                    Swal.fire({
+                        title: '¡Pokémon agregado!',
+                        text: `${newPoke.nombre} ha sido agregado a la base global`,
+                        icon: 'success',
+                        background: '#181818',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                }
+            });
+        }
+        
+        function editGlobalPoke(numero) {
+            const poke = pokemonesGlobales.find(p => p.numero == numero);
+            if (!poke) return;
+            
+            const tipos = [
+                "Normal","Fuego","Agua","Planta","Eléctrico","Hielo","Lucha","Veneno","Tierra","Volador","Psíquico","Bicho","Roca","Fantasma","Dragón","Siniestro","Acero","Hada"
+            ];
+            
+            function fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+            
+            Swal.fire({
+                title: 'Editar Pokémon Global',
+                html: `
+                    <h1>N° Pokédex</h1>
+                    <input id='swal-numero' class='swal2-input' placeholder='N° Pokédex' type='number' value='${poke.numero}'>
+                    <h1>Nombre</h1>
+                    <input id='swal-nombre' class='swal2-input' placeholder='Nombre' value='${poke.nombre}'>
+                    <h1>Imagen</h1>
+                    <input id='swal-imagen' class='swal2-file' type='file' accept='image/*'>
+                    <img id='swal-preview' src='${poke.imagen}' style='width:40px;display:${poke.imagen ? 'block' : 'none'};margin:0.5rem auto;'>
+                    <h1>Tipo 1</h1>
+                    <select id='swal-tipo1' class='swal2-select' onchange='setSelectColor(this)'>
+                        <option value=''>Seleccionar tipo</option>
+                        ${tipos.map(t => `<option value='${t}' ${poke.tipos && poke.tipos[0] === t ? 'selected' : ''}>${t}</option>`).join('')}
+                    </select>
+                    <h1>Tipo 2</h1>
+                    <select id='swal-tipo2' class='swal2-select' onchange='setSelectColor(this)'>
+                        <option value=''>Sin segundo tipo</option>
+                        ${tipos.map(t => `<option value='${t}' ${poke.tipos && poke.tipos[1] === t ? 'selected' : ''}>${t}</option>`).join('')}
+                    </select>`,
+                background: '#181818',
+                color: '#fff',
+                confirmButtonText: 'Guardar',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    document.getElementById('swal-imagen').addEventListener('change', function(e) {
+                        if (e.target.files && e.target.files[0]) {
+                            fileToBase64(e.target.files[0]).then(base64 => {
+                                document.getElementById('swal-preview').src = base64;
+                                document.getElementById('swal-preview').style.display = 'block';
+                            });
+                        }
+                    });
+                    setSelectColor(document.getElementById('swal-tipo1'));
+                    setSelectColor(document.getElementById('swal-tipo2'));
+                },
+                preConfirm: async () => {
+                    let imagen = poke.imagen;
+                    const fileInput = document.getElementById('swal-imagen');
+                    if (fileInput.files && fileInput.files[0]) {
+                        imagen = await fileToBase64(fileInput.files[0]);
+                    } else {
+                        imagen = document.getElementById('swal-preview').src;
+                    }
+                    
+                    const tipo1 = document.getElementById('swal-tipo1').value;
+                    const tipo2 = document.getElementById('swal-tipo2').value;
+                    const tipos = [tipo1];
+                    if (tipo2) tipos.push(tipo2);
+                    
+                    const numero = Number(document.getElementById('swal-numero').value);
+                    const nombre = document.getElementById('swal-nombre').value;
+                    
+                    if (!numero || !nombre || !imagen || tipos.length === 0 || !tipos[0]) {
+                        Swal.showValidationMessage('Todos los campos son requeridos');
+                        return false;
+                    }
+                    
+                    return {
+                        numero: numero,
+                        nombre: nombre,
+                        imagen: imagen,
+                        tipos: tipos
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const updatedPoke = result.value;
+                    const index = pokemonesGlobales.findIndex(p => p.numero == numero);
+                    
+                    if (index !== -1) {
+                        pokemonesGlobales[index] = updatedPoke;
+                        pokemonesGlobales.sort((a, b) => a.numero - b.numero);
+                        localStorage.setItem('pokemonesGlobales', JSON.stringify(pokemonesGlobales));
+                        
+                        // Sincronizar cambios con todos los usuarios
+                        sincronizarCambiosPokemonGlobal(updatedPoke.numero, updatedPoke.nombre, updatedPoke.imagen, updatedPoke.tipos);
+                        
+                        renderGlobalPokemones();
+                        
+                        Swal.fire({
+                            title: '¡Pokémon actualizado!',
+                            text: `${updatedPoke.nombre} ha sido actualizado y sincronizado con todos los usuarios`,
+                            icon: 'success',
+                            background: '#181818',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                    }
+                }
+            });
+        }
+        
+        function deleteGlobalPoke(numero) {
+            const poke = pokemonesGlobales.find(p => p.numero == numero);
+            if (!poke) return;
+            
+            Swal.fire({
+                title: '¿Eliminar Pokémon global?',
+                text: `¿Estás seguro de que quieres eliminar ${poke.nombre} de la base global?`,
+                icon: 'warning',
+                background: '#181818',
+                color: '#fff',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    pokemonesGlobales = pokemonesGlobales.filter(p => p.numero != numero);
+                    localStorage.setItem('pokemonesGlobales', JSON.stringify(pokemonesGlobales));
+                    
+                    renderGlobalPokemones();
+                    updateDashboardStats();
+                    
+                    Swal.fire({
+                        title: '¡Pokémon eliminado!',
+                        text: `${poke.nombre} ha sido eliminado de la base global`,
+                        icon: 'success',
+                        background: '#181818',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                }
+            });
+        }
+        
+        // Logout
+        function logout() {
+            currentAdmin = null;
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        }
+        
+        // Event listeners
+        document.getElementById('userSearchBox').addEventListener('input', renderUsers);
+        document.getElementById('pokeSearchBox').addEventListener('input', renderGlobalPokemones);
+        document.getElementById('addGlobalPokeBtn').addEventListener('click', addGlobalPoke);
+        
+        // Inicializar
+        if (checkAdminAuth()) {
+            loadData();
+            updateDashboardStats();
+            renderUsers();
+            renderGlobalPokemones();
+        }
+    </script>
+</body>
+</html> 

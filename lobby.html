@@ -293,15 +293,23 @@
     <img src="img/HISESSRIN.png" alt="Logo HISESSRIN" class="hisessrin-logo">
 
     <div class="dashboard-container">
-        <div style="position: absolute; top: 1.5rem; left: 2rem; z-index: 10;">
+                        <div style="position: absolute; top: 1.5rem; left: 2rem; z-index: 10;">
             <button class="btn btn-outline-info btn-sm" onclick="window.location.href='index.html'">
                 <i class="bi bi-house"></i> Inicio
+            </button>
+            <button class="btn btn-outline-success btn-sm" onclick="verificarCambiosYActualizar()" style="margin-left: 0.5rem;" id="refreshBtn" title="Actualizar datos">
+                <i class="bi bi-arrow-clockwise"></i> Actualizar
             </button>
         </div>
         <div class="dashboard-title">
             Pokémon Dashboard <i class="bi bi-grid-3x3-gap"></i>
             <div style="position: absolute; top: 1rem; right: 1rem; font-size: 0.9rem; color: #7fffd4;">
                 <span id="currentUserDisplay"></span>
+                <div id="adminButtonContainer" style="display: none; margin-top: 0.5rem;">
+                    <button class="btn btn-sm btn-outline-warning" onclick="window.location.href='admin.html'">
+                        <i class="bi bi-shield-check"></i> Panel Admin
+                    </button>
+                </div>
                 <button class="btn btn-sm btn-outline-danger" onclick="logout()" style="margin-left: 0.5rem;">
                     <i class="bi bi-box-arrow-left"></i> Salir
                 </button>
@@ -474,7 +482,22 @@
         }
         function getPokemonesBase() { 
             const userData = getUserData();
-            return userData.pokemonesBase;
+            const pokemonesGlobales = JSON.parse(localStorage.getItem('pokemonesGlobales') || '[]');
+            
+            // Combinar Pokémon del usuario con Pokémon globales
+            const todosLosPokemones = [...userData.pokemonesBase];
+            
+            pokemonesGlobales.forEach(pokeGlobal => {
+                // Solo agregar si no existe ya en la lista del usuario
+                if (!todosLosPokemones.find(p => p.numero == pokeGlobal.numero)) {
+                    todosLosPokemones.push({
+                        ...pokeGlobal,
+                        esGlobal: true // Marcar como Pokémon global
+                    });
+                }
+            });
+            
+            return todosLosPokemones.sort((a, b) => a.numero - b.numero);
         }
         function savePokemonesBase(pokes) { 
             saveUserData('pokemonesBase', pokes);
@@ -540,7 +563,14 @@
             }
         }
         
-        function sincronizarCambiosPokemon(numero, nuevoNombre, nuevaImagen) {
+        function sincronizarCambiosPokemon(numero, nuevoNombre, nuevaImagen, nuevosTipos = null) {
+            // Obtener los tipos del Pokémon base si no se proporcionan
+            if (!nuevosTipos) {
+                const pokesBase = getPokemonesBase();
+                const pokeBase = pokesBase.find(p => p.numero == numero);
+                nuevosTipos = pokeBase ? pokeBase.tipos : [];
+            }
+            
             // Sincronizar con shinys
             const shinys = getPokes();
             shinys.forEach(shiny => {
@@ -558,10 +588,24 @@
                     if (poke.numero == numero) {
                         poke.nombre = nuevoNombre;
                         poke.imagen = nuevaImagen;
+                        poke.tipos = nuevosTipos;
                     }
                 });
             });
             saveEquipos(equipos);
+            
+            // Sincronizar con sitios de encuentro
+            const sitios = getSitios();
+            sitios.forEach(sitio => {
+                sitio.pokemones.forEach(poke => {
+                    if (poke.numero == numero) {
+                        poke.nombre = nuevoNombre;
+                        poke.imagen = nuevaImagen;
+                        poke.tipos = nuevosTipos;
+                    }
+                });
+            });
+            saveSitios(sitios);
         }
 
         // Funciones de estadísticas
@@ -598,15 +642,24 @@
             const pokesBase = getPokemonesBase();
             
             // Sincronizar datos
+            let cambiosRealizados = false;
             pokes.forEach(poke => {
                 if (poke.numero) {
                     const pokeBase = pokesBase.find(p => p.numero == poke.numero);
                     if (pokeBase) {
-                        poke.nombre = pokeBase.nombre;
-                        poke.imagen = pokeBase.imagen;
+                        if (poke.nombre !== pokeBase.nombre || poke.imagen !== pokeBase.imagen) {
+                            poke.nombre = pokeBase.nombre;
+                            poke.imagen = pokeBase.imagen;
+                            cambiosRealizados = true;
+                        }
                     }
                 }
             });
+            
+            // Guardar cambios si se realizaron
+            if (cambiosRealizados) {
+                savePokes(pokes);
+            }
             
             const shinyList = document.getElementById('shinyList');
             shinyList.innerHTML = '';
@@ -658,18 +711,27 @@
             const pokesBase = getPokemonesBase();
             
             // Sincronizar datos
+            let cambiosRealizados = false;
             equipos.forEach(equipo => {
                 equipo.pokes.forEach(poke => {
                     if (poke.numero) {
                         const pokeBase = pokesBase.find(p => p.numero == poke.numero);
                         if (pokeBase) {
-                            poke.nombre = pokeBase.nombre;
-                            poke.imagen = pokeBase.imagen;
-                            poke.tipos = pokeBase.tipos;
+                            if (poke.nombre !== pokeBase.nombre || poke.imagen !== pokeBase.imagen || JSON.stringify(poke.tipos) !== JSON.stringify(pokeBase.tipos)) {
+                                poke.nombre = pokeBase.nombre;
+                                poke.imagen = pokeBase.imagen;
+                                poke.tipos = pokeBase.tipos;
+                                cambiosRealizados = true;
+                            }
                         }
                     }
                 });
             });
+            
+            // Guardar cambios si se realizaron
+            if (cambiosRealizados) {
+                saveEquipos(equipos);
+            }
             
             const teamList = document.getElementById('teamList');
             teamList.innerHTML = '';
@@ -718,10 +780,16 @@
                 const stats = getEstadisticasPokemon(poke.numero);
                 const div = document.createElement('div');
                 div.className = 'poke-item';
+                
+                // Determinar si es Pokémon global y si el usuario es admin
+                const esGlobal = poke.esGlobal;
+                const esAdmin = currentUser && currentUser.isAdmin;
+                
                 div.innerHTML = `
                     <img src='${poke.imagen}' class='poke-img'>
                     <span><b>#${poke.numero}</b></span>
                     <span>${poke.nombre}</span>
+                    ${esGlobal ? '<span style="color: #ffd700; font-weight: bold; font-size: 0.8rem;">GLOBAL</span>' : ''}
                     <span class='poke-types'>${poke.tipos.map(t=>`<span class='poke-type' style='color:${tipoColor(t)}'>${t}</span>`).join('')}</span>
                     <div class='stats-box'>
                         <div>Encuentros: ${stats.encuentros}</div>
@@ -729,8 +797,11 @@
                         <div>Nivel prom: ${stats.promedioNivel}</div>
                     </div>
                     <span class='poke-actions'>
-                        <button class='btn btn-sm btn-outline-warning' onclick='editPokeBase(${idx});'><i class='bi bi-pencil'></i></button>
-                        <button class='btn btn-sm btn-outline-danger' onclick='delPokeBase(${idx});'><i class='bi bi-trash'></i></button>
+                        ${!esGlobal || esAdmin ? 
+                            `<button class='btn btn-sm btn-outline-warning' onclick='editPokeBase(${idx});'><i class='bi bi-pencil'></i></button>
+                             <button class='btn btn-sm btn-outline-danger' onclick='delPokeBase(${idx});'><i class='bi bi-trash'></i></button>` : 
+                            `<button class='btn btn-sm btn-outline-secondary' disabled title='Solo administradores pueden editar Pokémon globales'><i class='bi bi-lock'></i></button>`
+                        }
                         <button class='btn btn-sm ${poke.favorito ? 'btn-warning' : 'btn-outline-warning'}' onclick='toggleFavorito(${idx});'><i class='bi bi-star${poke.favorito ? '-fill' : ''}'></i></button>
                     </span>
                 `;
@@ -824,8 +895,10 @@
                 if (res.isConfirmed) {
                     pokes[idx] = res.value;
                     savePokes(pokes);
-                    sincronizarConBase(res.value.numero, res.value.nombre, res.value.imagen);
+                    sincronizarCambiosPokemon(res.value.numero, res.value.nombre, res.value.imagen);
                     renderShinys();
+                    renderEquipos();
+                    renderSitios();
                 }
             });
         }
@@ -946,9 +1019,24 @@
         // Funciones de pokemones base
         function delPokeBase(idx) {
             const pokes = getPokemonesBase();
+            const poke = pokes[idx];
+            
+            // Verificar si es Pokémon global y si el usuario es admin
+            if (poke.esGlobal && (!currentUser || !currentUser.isAdmin)) {
+                Swal.fire({
+                    title: 'Acceso denegado',
+                    text: 'Solo los administradores pueden eliminar Pokémon globales',
+                    background: '#181818',
+                    color: '#fff',
+                    icon: 'error',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
             Swal.fire({
                 title: '¿Eliminar Pokémon?',
-                text: 'Esta acción no se puede deshacer.',
+                text: `¿Estás seguro de que quieres eliminar ${poke.nombre}?${poke.esGlobal ? ' Este es un Pokémon global.' : ''} Esta acción no se puede deshacer.`,
                 background: '#181818',
                 color: '#fff',
                 icon: 'warning',
@@ -959,8 +1047,24 @@
                 cancelButtonColor: '#222'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    pokes.splice(idx, 1);
-                    savePokemonesBase(pokes);
+                    // Si es Pokémon global, eliminarlo de la lista global
+                    if (poke.esGlobal) {
+                        const pokemonesGlobales = JSON.parse(localStorage.getItem('pokemonesGlobales') || '[]');
+                        const globalIndex = pokemonesGlobales.findIndex(p => p.numero == poke.numero);
+                        if (globalIndex !== -1) {
+                            pokemonesGlobales.splice(globalIndex, 1);
+                            localStorage.setItem('pokemonesGlobales', JSON.stringify(pokemonesGlobales));
+                        }
+                    } else {
+                        // Si es Pokémon del usuario, eliminarlo de su lista
+                        const userPokes = JSON.parse(localStorage.getItem(`pokemonesBase_${currentUser.username}`) || '[]');
+                        const userIndex = userPokes.findIndex(p => p.numero == poke.numero);
+                        if (userIndex !== -1) {
+                            userPokes.splice(userIndex, 1);
+                            localStorage.setItem(`pokemonesBase_${currentUser.username}`, JSON.stringify(userPokes));
+                        }
+                    }
+                    
                     renderPokemonesBase(document.getElementById('searchBox').value);
                 }
             });
@@ -1226,8 +1330,21 @@
             const pokes = getPokemonesBase();
             const poke = idx !== null ? pokes[idx] : {};
             
+            // Verificar si es Pokémon global y si el usuario es admin
+            if (idx !== null && poke.esGlobal && (!currentUser || !currentUser.isAdmin)) {
+                Swal.fire({
+                    title: 'Acceso denegado',
+                    text: 'Solo los administradores pueden editar Pokémon globales',
+                    background: '#181818',
+                    color: '#fff',
+                    icon: 'error',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
             Swal.fire({
-                title: idx !== null ? 'Editar Pokémon' : 'Agregar Pokémon',
+                title: idx !== null ? `Editar Pokémon${poke.esGlobal ? ' Global' : ''}` : 'Agregar Pokémon',
                 html: `
                     <h1>N° Pokédex</h1>
                     <input id='swal-numero' class='swal2-input' placeholder='N° Pokédex' type='number' value='${poke.numero || ''}'>
@@ -1288,18 +1405,43 @@
                 if (res.isConfirmed) {
                     if (idx !== null) {
                         const oldNumero = pokes[idx].numero;
-                        pokes[idx] = res.value;
-                        // Sincronizar cambios con otros CRUDs
-                        if (oldNumero !== res.value.numero) {
-                            sincronizarCambiosPokemon(res.value.numero, res.value.nombre, res.value.imagen);
+                        
+                        // Si es Pokémon global, actualizarlo en la lista global
+                        if (poke.esGlobal) {
+                            const pokemonesGlobales = JSON.parse(localStorage.getItem('pokemonesGlobales') || '[]');
+                            const globalIndex = pokemonesGlobales.findIndex(p => p.numero == poke.numero);
+                            if (globalIndex !== -1) {
+                                pokemonesGlobales[globalIndex] = res.value;
+                                localStorage.setItem('pokemonesGlobales', JSON.stringify(pokemonesGlobales));
+                            }
+                        } else {
+                            // Si es Pokémon del usuario, actualizarlo en su lista
+                            const userPokes = JSON.parse(localStorage.getItem(`pokemonesBase_${currentUser.username}`) || '[]');
+                            const userIndex = userPokes.findIndex(p => p.numero == poke.numero);
+                            if (userIndex !== -1) {
+                                userPokes[userIndex] = res.value;
+                                localStorage.setItem(`pokemonesBase_${currentUser.username}`, JSON.stringify(userPokes));
+                            }
                         }
+                        
+                        // Sincronizar cambios con otros CRUDs
+                        sincronizarCambiosPokemon(res.value.numero, res.value.nombre, res.value.imagen, res.value.tipos);
+                        
+                        // Actualizar las vistas de todos los CRUDs
+                        renderShinys();
+                        renderEquipos();
+                        renderSitios();
                     } else {
-                        pokes.push(res.value);
+                        // Agregar nuevo Pokémon a la lista del usuario
+                        const userPokes = JSON.parse(localStorage.getItem(`pokemonesBase_${currentUser.username}`) || '[]');
+                        userPokes.push(res.value);
+                        localStorage.setItem(`pokemonesBase_${currentUser.username}`, JSON.stringify(userPokes));
+                        
                         // Aplicar animación pulse al dashboard cuando se agrega nuevo Pokémon base
                         const dashboard = document.querySelector('.dashboard-container');
                         applyPulseAnimation(dashboard);
                     }
-                    savePokemonesBase(pokes);
+                    
                     renderPokemonesBase(document.getElementById('searchBox').value);
                 }
             });
@@ -1666,18 +1808,135 @@
             });
         }
 
+        // Variables para rastrear cambios
+        let lastShinysHash = '';
+        let lastEquiposHash = '';
+        let lastPokemonesBaseHash = '';
+        let lastSitiosHash = '';
+        
+        // Función para generar hash de datos
+        function generateDataHash(data) {
+            return JSON.stringify(data).length;
+        }
+        
+        // Función para verificar cambios y actualizar vistas
+        function verificarCambiosYActualizar() {
+            const shinys = getPokes();
+            const equipos = getEquipos();
+            const pokemonesBase = getPokemonesBase();
+            const sitios = getSitios();
+            
+            const currentShinysHash = generateDataHash(shinys);
+            const currentEquiposHash = generateDataHash(equipos);
+            const currentPokemonesBaseHash = generateDataHash(pokemonesBase);
+            const currentSitiosHash = generateDataHash(sitios);
+            
+            let cambiosDetectados = false;
+            
+            // Verificar cambios en shinys
+            if (currentShinysHash !== lastShinysHash) {
+                renderShinys();
+                lastShinysHash = currentShinysHash;
+                cambiosDetectados = true;
+            }
+            
+            // Verificar cambios en equipos
+            if (currentEquiposHash !== lastEquiposHash) {
+                renderEquipos();
+                lastEquiposHash = currentEquiposHash;
+                cambiosDetectados = true;
+            }
+            
+            // Verificar cambios en pokemones base
+            if (currentPokemonesBaseHash !== lastPokemonesBaseHash) {
+                renderPokemonesBase();
+                lastPokemonesBaseHash = currentPokemonesBaseHash;
+                cambiosDetectados = true;
+            }
+            
+            // Verificar cambios en sitios
+            if (currentSitiosHash !== lastSitiosHash) {
+                renderSitios();
+                lastSitiosHash = currentSitiosHash;
+                cambiosDetectados = true;
+            }
+            
+            // Mostrar notificación si se detectaron cambios
+            if (cambiosDetectados) {
+                const refreshBtn = document.getElementById('refreshBtn');
+                if (refreshBtn) {
+                    refreshBtn.innerHTML = '<i class="bi bi-check-circle"></i> Actualizado';
+                    refreshBtn.className = 'btn btn-success btn-sm';
+                    setTimeout(() => {
+                        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Actualizar';
+                        refreshBtn.className = 'btn btn-outline-success btn-sm';
+                    }, 2000);
+                }
+            }
+        }
+        
         // Inicialización
         if (checkAuth()) {
-            document.getElementById('currentUserDisplay').textContent = `Usuario: ${currentUser.username}`;
+            document.getElementById('currentUserDisplay').textContent = `Usuario: ${currentUser.username}${currentUser.isAdmin ? ' (Admin)' : ''}`;
+        
+        // Mostrar botón de admin si el usuario es administrador
+        if (currentUser.isAdmin) {
+            document.getElementById('adminButtonContainer').style.display = 'block';
+        }
             renderShinys();
             renderEquipos();
             renderPokemonesBase();
             renderSitios();
             document.getElementById('addSitioBtn').onclick = () => agregarEditarSitio();
+            
+            // Inicializar hashes
+            lastShinysHash = generateDataHash(getPokes());
+            lastEquiposHash = generateDataHash(getEquipos());
+            lastPokemonesBaseHash = generateDataHash(getPokemonesBase());
+            lastSitiosHash = generateDataHash(getSitios());
+            
+            // Verificar cambios cada 2 segundos para usuarios no admin
+            if (!currentUser.isAdmin) {
+                setInterval(verificarCambiosYActualizar, 2000);
+                
+                // Escuchar cambios en localStorage desde otras pestañas
+                window.addEventListener('storage', function(e) {
+                    if (e.key && (e.key.includes('shinys_') || e.key.includes('equipos_') || 
+                                 e.key.includes('pokemonesBase_') || e.key.includes('sitios_') || 
+                                 e.key === 'pokemonesGlobales')) {
+                        setTimeout(verificarCambiosYActualizar, 100);
+                    }
+                });
+            }
         }
 
         function renderSitios() {
             const sitios = getSitios();
+            const pokesBase = getPokemonesBase();
+            
+            // Sincronizar datos de Pokémon en sitios
+            let cambiosRealizados = false;
+            sitios.forEach(sitio => {
+                sitio.pokemones.forEach(poke => {
+                    if (poke.numero) {
+                        const pokeBase = pokesBase.find(p => p.numero == poke.numero);
+                        if (pokeBase) {
+                            if (poke.nombre !== pokeBase.nombre || poke.imagen !== pokeBase.imagen || JSON.stringify(poke.tipos) !== JSON.stringify(pokeBase.tipos)) {
+                                poke.nombre = pokeBase.nombre;
+                                poke.imagen = pokeBase.imagen;
+                                poke.tipos = pokeBase.tipos;
+                                cambiosRealizados = true;
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Guardar cambios si se realizaron
+            if (cambiosRealizados) {
+                saveSitios(sitios);
+            }
+            
             const sitiosList = document.getElementById('sitiosList');
             sitiosList.innerHTML = '';
             sitios.forEach((sitio, idx) => {

@@ -359,6 +359,12 @@
                     <input type="text" id="registerUsername" class="form-control" placeholder="Usuario" required>
                     <input type="password" id="registerPassword" class="form-control" placeholder="Contraseña" required>
                     <input type="password" id="registerConfirmPassword" class="form-control" placeholder="Confirmar Contraseña" required>
+                    <div class="form-check mb-3" style="text-align: left;">
+                        <input class="form-check-input" type="checkbox" id="registerIsAdmin" style="background: #111; border-color: #7fffd4;">
+                        <label class="form-check-label" for="registerIsAdmin" style="color: #ccc;">
+                            <i class="bi bi-shield-check"></i> Registrarse como Administrador
+                        </label>
+                    </div>
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-person-plus"></i> Crear Cuenta
                     </button>
@@ -449,6 +455,11 @@
                 <button class="btn btn-primary btn-lg" onclick="goToDashboard()">
                     <i class="bi bi-arrow-right"></i> Ir al Dashboard
                 </button>
+                <div id="adminPanelBtn" style="margin-top: 1rem; display: none;">
+                    <button class="btn btn-warning btn-lg" onclick="goToAdminPanel()">
+                        <i class="bi bi-shield-check"></i> Panel de Administración
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -466,6 +477,16 @@
         // Sistema de usuarios
         let currentUser = null;
         let users = JSON.parse(localStorage.getItem('users') || '[]');
+        
+        // Crear usuario administrador por defecto si no existe
+        if (users.length === 0) {
+            users.push({
+                username: 'admin',
+                password: 'admin123',
+                isAdmin: true
+            });
+            localStorage.setItem('users', JSON.stringify(users));
+        }
 
         // Verificar si hay usuario logueado
         function checkLoggedIn() {
@@ -482,6 +503,11 @@
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('userSection').style.display = 'block';
             document.getElementById('currentUsername').textContent = currentUser.username;
+            
+            // Mostrar botón de admin si el usuario es administrador
+            if (currentUser.isAdmin) {
+                document.getElementById('adminPanelBtn').style.display = 'block';
+            }
         }
 
         // Mostrar sección de autenticación
@@ -561,6 +587,7 @@
             const username = document.getElementById('registerUsername').value;
             const password = document.getElementById('registerPassword').value;
             const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            const isAdmin = document.getElementById('registerIsAdmin').checked;
             
             if (password !== confirmPassword) {
                 Swal.fire({
@@ -586,7 +613,7 @@
                 return;
             }
             
-            const newUser = { username, password };
+            const newUser = { username, password, isAdmin: isAdmin };
             users.push(newUser);
             localStorage.setItem('users', JSON.stringify(users));
             
@@ -597,7 +624,7 @@
             
             Swal.fire({
                 title: '¡Cuenta creada!',
-                text: 'Tu cuenta ha sido creada exitosamente',
+                text: `Tu cuenta ha sido creada exitosamente${isAdmin ? ' como Administrador' : ''}`,
                 icon: 'success',
                 background: '#181818',
                 color: '#fff',
@@ -627,6 +654,11 @@
         // Ir al dashboard
         function goToDashboard() {
             window.location.href = 'lobby.html';
+        }
+
+        // Ir al panel de administración
+        function goToAdminPanel() {
+            window.location.href = 'admin.html';
         }
 
         // Inicializar
